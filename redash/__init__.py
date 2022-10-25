@@ -15,7 +15,7 @@ from .app import create_app  # noqa
 from .query_runner import import_query_runners
 from .destinations import import_destinations
 
-__version__ = "11.0.0-dev"
+__version__ = "10.1.1-frubana" 
 
 
 if os.environ.get("REMOTE_DEBUG"):
