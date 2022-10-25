@@ -370,7 +370,7 @@ def guess_type(value):
 
 
 def guess_type_from_string(string_value):
-    if string_value == "" or string_value is None:
+    if string_value == "" or string_value is None or "_" in string_value:
         return TYPE_STRING
 
     try:
