@@ -59,7 +59,7 @@ def _value_eval_list(row_values, col_types):
                 val = parser.parse(rval)
             elif typ == TYPE_FLOAT:
                 val = float(rval)
-            elif typ == TYPE_INTEGER:
+            elif typ == TYPE_INTEGER and "_" not in rval:
                 val = int(rval)
             else:
                 # for TYPE_STRING and default
