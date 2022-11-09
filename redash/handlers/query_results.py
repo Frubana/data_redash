@@ -38,6 +38,9 @@ from redash.serializers import (
 )
 
 
+MIN_MAX_AGE = 900 #min max_age used when `qparam:disable_cache`` is False on run_query
+
+
 def error_response(message, http_status=400):
     return {"job": {"status": 4, "error": message}}, http_status
 
@@ -170,15 +173,24 @@ class QueryResultListResource(BaseResource):
                                 always execute.
         :qparam number data_source_id: ID of data source to query
         :qparam object parameters: A set of parameter values to apply to the query.
+        :qparam boolean disable_cache:  If False or None, will return the query results of less than 
+                                        900 seconds old available (ignore max_age) or executes if not avaliable.
+                                        If True, use the `max_age` logic.
         """
         params = request.get_json(force=True)
 
         query = params["query"]
-        max_age = params.get("max_age", -1)
-        # max_age might have the value of None, in which case calling int(None) will fail
-        if max_age is None:
-            max_age = -1
-        max_age = int(max_age)
+        disable_cache = params.get("disable_cache", False)
+
+        if disable_cache:
+            max_age = params.get("max_age", -1)
+            # max_age might have the value of None, in which case calling int(None) will fail
+            if max_age is None:
+                max_age = -1
+            max_age = int(max_age)
+        else:
+            max_age = MIN_MAX_AGE
+
         query_id = params.get("query_id", "adhoc")
         parameters = params.get(
             "parameters", collect_parameters_from_request(request.args)
@@ -282,15 +294,22 @@ class QueryResultResource(BaseResource):
                                 return them, otherwise execute the query; if omitted or -1, returns
                                 any cached result, or executes if not available. Set to zero to
                                 always execute.
+        :qparam boolean disable_cache:  If False or None, will return the query results of less than 
+                                        900 seconds old available (ignore max_age) or executes if not avaliable.
+                                        If True, use the `max_age` logic.
         """
         params = request.get_json(force=True, silent=True) or {}
         parameter_values = params.get("parameters", {})
+        disable_cache = params.get("disable_cache", False)
 
-        max_age = params.get("max_age", -1)
-        # max_age might have the value of None, in which case calling int(None) will fail
-        if max_age is None:
-            max_age = -1
-        max_age = int(max_age)
+        if disable_cache:
+            max_age = params.get("max_age", -1)
+            # max_age might have the value of None, in which case calling int(None) will fail
+            if max_age is None:
+                max_age = -1
+            max_age = int(max_age)
+        else:
+            max_age = MIN_MAX_AGE
 
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
