@@ -15,7 +15,7 @@ export DOCKER_REGISTRY=251737917366.dkr.ecr.us-east-1.amazonaws.com
 pip3 install -r requirements_bundles.txt
 npm install --global --force yarn@1.22.10
 yarn bundle
-docker build --build-arg skip_dev_deps=true -t 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana .
+sudo docker build --build-arg skip_dev_deps=true -t 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana .
 
 #deploy
 #docker login (en ec2 hay un paquete que logea automaticamente)

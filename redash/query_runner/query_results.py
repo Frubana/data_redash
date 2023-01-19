@@ -56,7 +56,7 @@ def _annotate_query(query_runner, query, user):
     metadata["Scheduled"] = query.schedule is not None
     #metadata["Job ID"] =  job.id # esta informacion se encuentra en execution.py#246
     #se deberia pasar toda la metadata del executor cuando se llaman al run_query(), pero hay que modificar todos los query_runners
-    return query_runner.annotate_query(query, metadata)
+    return query_runner.annotate_query(query.query_text, metadata)
 
 
 def get_query_results(user, query_id, bring_from_cache):
@@ -73,7 +73,7 @@ def get_query_results(user, query_id, bring_from_cache):
             annotated_query, user
         )
         if error:
-            raise Exception("Failed loading results for query id {}.".format(query.id))
+            raise Exception("Failed loading results for query id {}. Error: {}".format(query.id, error))
         else:
             results = json_loads(results)
 
