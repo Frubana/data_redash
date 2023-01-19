@@ -48,6 +48,17 @@ def _load_query(user, query_id):
     return query
 
 
+def _annotate_query(query_runner, query, user):
+    metadata = {}
+    metadata["Query Hash"] = query.query_hash
+    metadata["Username"] = user.email
+    metadata["query_id"] = query.id
+    metadata["Scheduled"] = query.schedule is not None
+    #metadata["Job ID"] =  job.id # esta informacion se encuentra en execution.py#246
+    #se deberia pasar toda la metadata del executor cuando se llaman al run_query(), pero hay que modificar todos los query_runners
+    return query_runner.annotate_query(query, metadata)
+
+
 def get_query_results(user, query_id, bring_from_cache):
     query = _load_query(user, query_id)
     if bring_from_cache:
@@ -56,8 +67,10 @@ def get_query_results(user, query_id, bring_from_cache):
         else:
             raise Exception("No cached result available for query {}.".format(query.id))
     else:
-        results, error = query.data_source.query_runner.run_query(
-            query.query_text, user
+        query_runner = query.data_source.query_runner
+        annotated_query = _annotate_query(query_runner, query, user)
+        results, error = query_runner.run_query(
+            annotated_query, user
         )
         if error:
             raise Exception("Failed loading results for query id {}.".format(query.id))
