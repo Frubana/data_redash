@@ -15,7 +15,7 @@ export DOCKER_REGISTRY=251737917366.dkr.ecr.us-east-1.amazonaws.com
 pip3 install -r requirements_bundles.txt
 npm install --global --force yarn@1.22.10
 yarn bundle
-docker build --build-arg skip_dev_deps=true -t 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana .
+sudo docker build --build-arg skip_dev_deps=true -t 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana .
 
 #deploy
 #docker login (en ec2 hay un paquete que logea automaticamente)
@@ -35,3 +35,28 @@ docker-compose up --force-recreate --build
 docker-compose run --rm server create_db
 docker-compose run --rm server manage db upgrade
 ```
+
+
+COMO ACTUALIZAR:
+
+Lanzar una nueva instancia desde el launch template que corresponda.
+
+Ingresar a la instancia y ejecutar:
+
+Modificar la version segun corresponda.
+```bash
+export DOCKER_REGISTRY=251737917366.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin $DOCKER_REGISTRY
+sudo docker pull 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana
+cd /opt/redash
+sudo docker-compose rm -s -f
+#actualizar la version en el docker-compose.yml
+sudo docker-compose up -d
+sudo docker rmi 19b4394daf76
+```
+
+Crear una nueva AMI para la EC2 correspondiente, en el nombre ingresar la fecha.
+
+Crear un nuevo Launch template con la version correspondiente de la AMI.
+
+Lanzar un instance refresh del ASG.
