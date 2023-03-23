@@ -1,6 +1,6 @@
 {
   "name": "redash-client",
-  "version": "10.3.2-frubana",
+  "version": "__version__",
   "description": "The frontend part of Redash.",
   "main": "index.js",
   "scripts": {
