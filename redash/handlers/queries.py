@@ -347,6 +347,9 @@ class QueryResource(BaseResource):
 
         require_object_modify_permission(query, self.current_user)
         require_access_to_dropdown_queries(self.current_user, query_def)
+        
+        if "schedule" in query_def and query.is_archived and not self.current_user.has_permission('admin'):
+            raise Exception("The query {} is archived and the schedule cannot be activated.".format(query.id))
 
         for field in [
             "id",
@@ -490,6 +493,8 @@ class QueryRefreshResource(BaseResource):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
+        if query.is_archived and not self.current_user.has_permission('admin'):
+            raise Exception("The query {} is archived and cannot be executed.".format(query.id))
         require_access(query, self.current_user, not_view_only)
 
         parameter_values = collect_parameters_from_request(request.args)
