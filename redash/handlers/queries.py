@@ -347,6 +347,9 @@ class QueryResource(BaseResource):
 
         require_object_modify_permission(query, self.current_user)
         require_access_to_dropdown_queries(self.current_user, query_def)
+        
+        if "schedule" in query_def and query.is_archived and not self.current_user.has_permission('admin'):
+            raise Exception("The query {} is archived and the schedule cannot be activated.".format(query.id))
 
         for field in [
             "id",
