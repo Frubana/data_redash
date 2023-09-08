@@ -490,6 +490,8 @@ class QueryRefreshResource(BaseResource):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
+        if query.is_archived and not self.current_user.has_permission('admin'):
+            raise Exception("The query {} is archived and cannot be executed.".format(query.id))
         require_access(query, self.current_user, not_view_only)
 
         parameter_values = collect_parameters_from_request(request.args)
