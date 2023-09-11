@@ -110,7 +110,7 @@ class TestQueryResourcePost(BaseTestCase):
 
     def test_update_schedule_archived_query(self):
         other_user = self.factory.create_user()
-        query = self.factory.create_query(is_archived=True)
+        query = self.factory.create_query(is_archived=True, user=other_user)
 
         new_ds = self.factory.create_data_source()
         new_qr = self.factory.create_query_result()
@@ -127,6 +127,32 @@ class TestQueryResourcePost(BaseTestCase):
             "post", "/api/queries/{0}".format(query.id), data=data, user=other_user
         )
         self.assertEqual(400, response.status_code)
+
+    def test_update_schedule_query(self):
+        other_user = self.factory.create_user()
+        query = self.factory.create_query(user=other_user)
+
+        new_ds = self.factory.create_data_source()
+        new_qr = self.factory.create_query_result()
+
+        data = {
+            "name": "Testing",
+            "query": "select 2",
+            "latest_query_data_id": new_qr.id,
+            "data_source_id": new_ds.id,
+            "schedule": {"interval": "3600"},
+        }
+
+        rv = self.make_request(
+            "post", "/api/queries/{0}".format(query.id), data=data, user=other_user
+        )
+        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(rv.json["name"], data["name"])
+        self.assertEqual(rv.json["last_modified_by"]["id"], other_user.id)
+        self.assertEqual(rv.json["query"], data["query"])
+        self.assertEqual(rv.json["data_source_id"], data["data_source_id"])
+        self.assertEqual(rv.json["latest_query_data_id"], data["latest_query_data_id"])
+        self.assertEqual(rv.json["schedule"]["interval"], data["schedule"]["interval"])
 
     def test_update_schedule_archived_query_admin(self):
         admin = self.factory.create_admin()
