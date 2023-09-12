@@ -67,6 +67,9 @@ function doSaveQuery(data, { canOverwrite = false } = {}) {
       }
       return Promise.reject(new SaveQueryConflictError());
     }
+    if (get(error, "response.data.message")) {
+      return Promise.reject(new SaveQueryError(get(error, "response.data.message")));
+    }
     return Promise.reject(new SaveQueryError("Query could not be saved"));
   });
 }
