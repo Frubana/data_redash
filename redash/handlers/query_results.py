@@ -299,6 +299,12 @@ class QueryResultResource(BaseResource):
         allow_executing_with_view_only_permissions = query.parameterized.is_safe
         should_apply_auto_limit = params.get("apply_auto_limit", False)
 
+        if query.is_archived and not self.current_user.has_permission('admin'):
+            abort(
+                400,
+                message="The query {} is archived and cannot be executed.".format(query.id),
+            )
+
         if has_access(
             query, self.current_user, allow_executing_with_view_only_permissions
         ):

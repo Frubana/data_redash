@@ -243,6 +243,27 @@ class TestQueryResultAPI(BaseTestCase):
         self.assertEqual(rv.status_code, 200)
         self.assertIn("job", rv.json)
 
+    def test_execute_new_query_archived(self):
+        query = self.factory.create_query(is_archived=True)
+        other_user = self.factory.create_user()
+
+        rv = self.make_request(
+            "post", "/api/queries/{}/results".format(query.id), data={"parameters": {}}, user=other_user
+        )
+
+        self.assertEqual(rv.status_code, 400)
+
+    def test_execute_new_query_archived_admin(self):
+        query = self.factory.create_query(is_archived=True)
+        admin = self.factory.create_admin()
+
+        rv = self.make_request(
+            "post", "/api/queries/{}/results".format(query.id), data={"parameters": {}}, user=admin
+        )
+
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn("job", rv.json)
+
     def test_execute_but_has_no_access_to_data_source(self):
         ds = self.factory.create_data_source(group=self.factory.create_group())
         query = self.factory.create_query(data_source=ds)

@@ -3,7 +3,7 @@ import re
 import sqlite3
 
 from redash import models
-from redash.permissions import has_access, view_only
+from redash.permissions import has_access, view_only, has_permission
 from redash.query_runner import (
     BaseQueryRunner,
     TYPE_STRING,
@@ -61,6 +61,10 @@ def _annotate_query(query_runner, query, user):
 
 def get_query_results(user, query_id, bring_from_cache):
     query = _load_query(user, query_id)
+    
+    if query.is_archived and not has_permission('admin', user):
+            raise Exception("The query {} is archived and cannot be executed.".format(query.id))
+        
     if bring_from_cache:
         if query.latest_query_data_id is not None:
             results = query.latest_query_data.data

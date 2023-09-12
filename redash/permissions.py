@@ -118,3 +118,6 @@ def can_modify(obj, user):
 def require_object_modify_permission(obj, user):
     if not can_modify(obj, user):
         abort(403)
+
+def has_permission(permission, user):
+    return permission in user.permissions
