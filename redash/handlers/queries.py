@@ -30,7 +30,6 @@ from redash.utils import collect_parameters_from_request
 from redash.serializers import QuerySerializer
 from redash.models.parameterized_query import ParameterizedQuery
 
-
 # Ordering map for relationships
 order_map = {
     "name": "lowercase_name",
@@ -192,7 +191,7 @@ def require_access_to_dropdown_queries(user, query_def):
             abort(
                 400,
                 message="You are trying to associate a dropdown query that does not have a matching group. "
-                "Please verify the dropdown query id you are trying to associate with this query.",
+                        "Please verify the dropdown query id you are trying to associate with this query.",
             )
 
         require_access(dict(groups), user, view_only)
@@ -348,7 +347,7 @@ class QueryResource(BaseResource):
         require_object_modify_permission(query, self.current_user)
         require_access_to_dropdown_queries(self.current_user, query_def)
 
-        if "schedule" in query_def and query.is_archived and not self.current_user.has_permission('admin'):
+        if query.is_archived and not self.current_user.has_permission('admin') and "schedule" in query_def and query_def["schedule"] is not None:
             abort(
                 400,
                 message="The query {} is archived and the schedule cannot be activated.".format(query.id),
