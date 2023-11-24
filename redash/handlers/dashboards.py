@@ -1,3 +1,5 @@
+import datetime
+
 from flask import request, url_for
 from funcy import project, partial
 
@@ -193,8 +195,13 @@ class DashboardResource(BaseResource):
             fn = models.Dashboard.get_by_id_and_org
 
         dashboard = get_object_or_404(fn, dashboard_id, self.current_org)
+
+        one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        executions = models.DashboardExecutions.search(dashboard_id, one_day_ago)
+
         response = DashboardSerializer(
-            dashboard, with_widgets=True, user=self.current_user
+            dashboard, with_widgets=True, user=self.current_user, with_executions=True,
+            executions=executions
         ).serialize()
 
         api_key = models.ApiKey.get_by_object(dashboard)
