@@ -1533,6 +1533,17 @@ class DashboardExecutions(db.Model):
 
         return query
 
+    @classmethod
+    def search(cls, dashboard_id, execution_date):
+        query = (
+            DashboardExecutions.query.filter(
+                cls.dashboard_id == dashboard_id,
+                cls.execution_date > execution_date
+            )
+        )
+
+        return query
+
     def __str__(self):
         return str(self.id)
 
