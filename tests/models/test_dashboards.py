@@ -1,5 +1,5 @@
 from tests import BaseTestCase
-from redash.models import db, Dashboard
+from redash.models import db, Dashboard, DashboardExecutions
 
 
 class DashboardTest(BaseTestCase):
@@ -29,6 +29,16 @@ class DashboardTest(BaseTestCase):
             [("tag1", 3), ("tag2", 2), ("tag3", 1)],
         )
 
+    def test_returns_correct_number_of_dashboard_executions(self):
+        d1 = self.factory.create_dashboard(is_draft=True)
+
+        e1 = self.factory.create_dashboard_execution(dashboard=d1)
+        e2 = self.factory.create_dashboard_execution(dashboard=d1)
+
+        executions = DashboardExecutions.all(d1.id)
+
+        self.assertEqual(2, executions.count(), "The incorrect number of dashboards executions were returned")
+
 
 class TestDashboardsByUser(BaseTestCase):
     def test_returns_only_users_dashboards(self):
@@ -51,10 +61,9 @@ class TestDashboardsByUser(BaseTestCase):
         self.assertTrue(d in dashboards)
         self.assertFalse(d2 in dashboards)
 
-
     def test_returns_correct_number_of_dashboards(self):
         # Solving https://github.com/getredash/redash/issues/5466
-        
+
         usr = self.factory.create_user()
 
         ds1 = self.factory.create_data_source()
@@ -75,7 +84,7 @@ class TestDashboardsByUser(BaseTestCase):
 
         d1 = create_dashboard()
         d2 = create_dashboard()
-        
+
         results = Dashboard.all(self.factory.org, usr.group_ids, usr.id)
 
         self.assertEqual(2, results.count(), "The incorrect number of dashboards were returned")
