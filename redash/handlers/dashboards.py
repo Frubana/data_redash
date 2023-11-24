@@ -427,3 +427,26 @@ class DashboardFavoriteListResource(BaseResource):
         )
 
         return response
+
+
+class DashboardExecutionsResource(BaseResource):
+
+    @require_permission("edit_dashboard")
+    def post(self, dashboard_id):
+        """
+        Creates a new execution for a dashboard.
+
+        :qparam number id: Id of dashboard.
+
+        Responds with a :ref:dashboard execution.
+        """
+
+        dashboard_execution = models.DashboardExecutions(dashboard_id=dashboard_id)
+        models.db.session.add(dashboard_execution)
+        models.db.session.commit()
+
+        self.record_event(
+            {"action": "execute", "object_id": dashboard_id, "object_type": "dashboard"}
+        )
+
+        return dashboard_execution.to_dict()
