@@ -197,7 +197,7 @@ class DashboardResource(BaseResource):
         dashboard = get_object_or_404(fn, dashboard_id, self.current_org)
 
         one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-        executions = models.DashboardExecutions.search(dashboard_id, one_day_ago)
+        executions = models.DashboardExecutions.search(dashboard.id, one_day_ago)
 
         response = DashboardSerializer(
             dashboard, with_widgets=True, user=self.current_user, with_executions=True,
