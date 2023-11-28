@@ -1102,6 +1102,7 @@ class Dashboard(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model
     options = Column(
         MutableDict.as_mutable(postgresql.JSON), server_default="{}", default={}
     )
+    executions = db.relationship("DashboardExecutions", backref="dashboard", lazy="dynamic")
 
     __tablename__ = "dashboards"
     __mapper_args__ = {"version_id_col": version}
@@ -1514,3 +1515,29 @@ def init_db():
     # XXX remove after fixing User.group_ids
     db.session.commit()
     return default_org, admin_group, default_group
+
+
+class DashboardExecutions(db.Model):
+    __tablename__ = "dashboard_executions"
+
+    id = primary_key("DashboardExecutions")
+    execution_date = Column(db.DateTime(True), default=db.func.now(), nullable=False)
+    dashboard_id = Column(key_type("Dashboard"), db.ForeignKey("dashboards.id"), index=True)
+
+    @classmethod
+    def all(cls, dashboard_id):
+        query = (
+            DashboardExecutions.query.filter(cls.dashboard_id == dashboard_id)
+        )
+
+        return query
+
+    def __str__(self):
+        return str(self.id)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "execution_date": self.execution_date,
+            "dashboard_id": int(self.dashboard_id)
+        }

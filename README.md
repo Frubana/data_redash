@@ -2,61 +2,94 @@
   <img title="Redash" src='https://redash.io/assets/images/logo.png' width="200px"/>
 </p>
 
-## Deploy Manual
 
-Actualizar la version en los files package.json y /redash/__init__.py . Actualizar el build en el archivo /client/app/version.json (fecha).
+## Nueva versión:
 
-Actualizar la version al crear el tag de Docker.
+Una vez realizados los cambios se tiene que actualizar el archivo VERSION con la nueva version,
+una vez que los cambios se mergeen en `master-frubana` se ejecuta un pipeline que crea la nueva imagen en ECR.
 
-```bash
-export DOCKER_REGISTRY=251737917366.dkr.ecr.us-east-1.amazonaws.com
 
-#build
-pip3 install -r requirements_bundles.txt
-npm install --global --force yarn@1.22.10
-yarn bundle
-sudo docker build --build-arg skip_dev_deps=true -t 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana .
+## LOCAL DEVELOPMENT.
 
-#deploy
-#docker login (en ec2 hay un paquete que logea automaticamente)
-aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin $DOCKER_REGISTRY
-sudo docker push 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana
+Se tiene que utilizar Node 12 y python 3.7
+
+Se puede utilizar nvm para tener distintas versiones de node instalada en el SO.
+
+```sh
+nvm install 12
+nvm use 12
 ```
 
-## Test Local
+Crear un virtual env con python 3.7, se recomienda utilizar un nuevo interprete en PyCharm cuando se
+levante el proyecto.
 
-```bash
-export DOCKER_REGISTRY=251737917366.dkr.ecr.us-east-1.amazonaws.com
+### FRONTEND:
 
-aws ecr get-login-password --profile=data.admin | docker login --username AWS --password-stdin $DOCKER_REGISTRY
-docker pull 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana
+Para levantar el frontend en modo desarrollo se tiene que modificar en el archivo package.json y package-lock.json,
+la propiedad "version", quitar el texto __version__ y remplazarlo por algun numero, este cambio nunca debe ser subido
+ya que el pipeline utiliza ese placeholder para crear una nueva release.
 
-docker-compose up --force-recreate --build
+```sh
+pip3 install -r requirements_bundles.txt
+npm ci
+npm start
+```
+
+## BACKEND:
+Para levantar la api en modo desarrollo se levanta con contenedor con docker,
+el servidor monta el volumen donde se encuentran los archivos del backend.
+
+```shell
+docker-compose up server
 docker-compose run --rm server create_db
 docker-compose run --rm server manage db upgrade
 ```
 
+### Instalar librerias python en el virtualenv
 
-COMO ACTUALIZAR:
+Ya que existen muchos conflictos de versiones se tiene que utilizar una version especifica de pip
+para que las resuelva sin problemas.
 
-Lanzar una nueva instancia desde el launch template que corresponda.
+```shell
+export PIP_DISABLE_PIP_VERSION_CHECK=1
+export PIP_NO_CACHE_DIR=1
 
-Ingresar a la instancia y ejecutar:
-
-Modificar la version segun corresponda.
-```bash
-export DOCKER_REGISTRY=251737917366.dkr.ecr.us-east-1.amazonaws.com
-aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin $DOCKER_REGISTRY
-sudo docker pull 251737917366.dkr.ecr.us-east-1.amazonaws.com/redash:10.1.1-frubana
-cd /opt/redash
-sudo docker-compose rm -s -f
-#actualizar la version en el docker-compose.yml
-sudo docker-compose up -d
-sudo docker rmi 19b4394daf76
+pip install pip==20.2.4;
+pip install -r requirements.txt
 ```
 
-Crear una nueva AMI para la EC2 correspondiente, en el nombre ingresar la fecha.
 
-Crear un nuevo Launch template con la version correspondiente de la AMI.
+## Comandos Utiles
 
-Lanzar un instance refresh del ASG.
+### Crear base de datos
+Esto es para inicializar una base de datos vacia.
+```sh
+make create_database
+```
+
+### Actualizar base de datos
+Esto es para inicializar una base de datos vacia.
+```sh
+make apply-migration
+```
+
+### Crear una nueva migracion
+Si se crea un nuevo modelo para crear la migracion correspondiente:
+https://flask-migrate.readthedocs.io/en/latest/
+
+```sh
+make create-migration
+```
+
+### Tests
+Este comando crea la base de datos para Test y los ejecuta.
+```sh
+make backend-unit-tests
+```
+
+Para solamente ejecutar los tests (la base de datos ya existe)
+```sh
+make tests
+```
+
+

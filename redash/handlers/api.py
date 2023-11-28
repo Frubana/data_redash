@@ -18,6 +18,7 @@ from redash.handlers.dashboards import (
     DashboardShareResource,
     DashboardTagsResource,
     PublicDashboardResource,
+    DashboardExecutionsResource,
 )
 from redash.handlers.data_sources import (
     DataSourceListResource,
@@ -130,6 +131,9 @@ api.add_org_resource(AlertListResource, "/api/alerts", endpoint="alerts")
 api.add_org_resource(DashboardListResource, "/api/dashboards", endpoint="dashboards")
 api.add_org_resource(
     DashboardResource, "/api/dashboards/<dashboard_id>", endpoint="dashboard"
+)
+api.add_org_resource(
+    DashboardExecutionsResource, "/api/dashboards/<dashboard_id>/executions", endpoint="dashboard_executions"
 )
 api.add_org_resource(
     PublicDashboardResource,
