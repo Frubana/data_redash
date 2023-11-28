@@ -63,7 +63,7 @@ DashboardPageTitle.propTypes = {
 };
 
 function RefreshButton({ dashboardConfiguration }) {
-  const { refreshRate, setRefreshRate, disableRefreshRate, refreshing, refreshDashboard } = dashboardConfiguration;
+  const { allowRefresh, refreshRate, setRefreshRate, disableRefreshRate, refreshing, refreshDashboard } = dashboardConfiguration;
   const allowedIntervals = policy.getDashboardRefreshIntervals();
   const refreshRateOptions = clientConfig.dashboardRefreshIntervals;
   const onRefreshRateSelected = ({ key }) => {
@@ -78,12 +78,13 @@ function RefreshButton({ dashboardConfiguration }) {
   return (
     <Button.Group>
       <Tooltip title={refreshRate ? `Auto Refreshing every ${durationHumanize(refreshRate)}` : null}>
-        <Button type={buttonType(refreshRate)} onClick={() => refreshDashboard()}>
+        <Button type={buttonType(refreshRate)} onClick={() => refreshDashboard()} disabled={!allowRefresh}>
           <i className={cx("zmdi zmdi-refresh m-r-5", { "zmdi-hc-spin": refreshing })} aria-hidden="true" />
           {refreshRate ? durationHumanize(refreshRate) : "Refresh"}
         </Button>
       </Tooltip>
       <Dropdown
+        disabled={!allowRefresh}
         trigger={["click"]}
         placement="bottomRight"
         overlay={

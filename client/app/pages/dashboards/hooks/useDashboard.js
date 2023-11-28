@@ -38,6 +38,7 @@ function useDashboard(dashboardData) {
   const [dashboard, setDashboard] = useState(dashboardData);
   const [filters, setFilters] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [allowRefresh, setAllowRefresh] = useState(true);
   const [gridDisabled, setGridDisabled] = useState(false);
   const globalParameters = useMemo(() => dashboard.getParametersDefs(), [dashboard]);
   const canEditDashboard = !dashboard.is_archived && policy.canEdit(dashboard);
@@ -145,10 +146,17 @@ function useDashboard(dashboardData) {
     updatedParameters => {
       if (!refreshing) {
         setRefreshing(true);
+        Dashboard.execute(dashboard).then(updateExecution => {
+          setDashboard(currentDashboard => {
+            let copy = pick(currentDashboard, ['latest_executions'])
+            copy['latest_executions'] ? copy['latest_executions'].push(updateExecution) : copy['latest_executions'] = [updateExecution]
+            return extend({}, currentDashboard, copy)
+          })
+        });
         loadDashboard(true, updatedParameters).finally(() => setRefreshing(false));
       }
     },
-    [refreshing, loadDashboard]
+    [refreshing, loadDashboard, dashboard]
   );
 
   const archiveDashboard = useCallback(() => {
@@ -215,6 +223,19 @@ function useDashboard(dashboardData) {
     loadDashboard();
   }, [dashboard.dashboard_filters_enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(
+    () => {
+      let allowed_executions = dashboard['allowed_executions']
+      if (!allowed_executions && allowed_executions !== 0)
+        return
+      if (allowed_executions <= (dashboard['latest_executions'] || []).length) {
+        setAllowRefresh(false)
+        disableRefreshRate()
+      }
+    },
+    [dashboard] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   return {
     dashboard,
     globalParameters,
@@ -243,6 +264,7 @@ function useDashboard(dashboardData) {
     showAddTextboxDialog,
     showAddWidgetDialog,
     managePermissions,
+    allowRefresh,
   };
 }
 
