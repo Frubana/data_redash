@@ -1103,6 +1103,7 @@ class Dashboard(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model
         MutableDict.as_mutable(postgresql.JSON), server_default="{}", default={}
     )
     executions = db.relationship("DashboardExecutions", backref="dashboard", lazy="dynamic")
+    allowed_executions = Column(db.Integer, nullable=True)
 
     __tablename__ = "dashboards"
     __mapper_args__ = {"version_id_col": version}
@@ -1528,6 +1529,17 @@ class DashboardExecutions(db.Model):
     def all(cls, dashboard_id):
         query = (
             DashboardExecutions.query.filter(cls.dashboard_id == dashboard_id)
+        )
+
+        return query
+
+    @classmethod
+    def search(cls, dashboard_id, execution_date):
+        query = (
+            DashboardExecutions.query.filter(
+                cls.dashboard_id == dashboard_id,
+                cls.execution_date > execution_date
+            )
         )
 
         return query
