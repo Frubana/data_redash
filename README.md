@@ -82,6 +82,12 @@ make create-migration
 ```
 
 ### Tests
+
+Para que todos los tests se ejecuten correctamente se tienen que crear los archivos _./client/dist/index.html_
+y _./client/dist/multi_org.html_ (con que esten vacios funciona) o ejecutar npm build.
+
+**Nota**: Los únicos tests que no funcionan son los del archivo test_athena.py .
+
 Este comando crea la base de datos para Test y los ejecuta.
 ```sh
 make backend-unit-tests
