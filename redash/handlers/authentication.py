@@ -301,6 +301,7 @@ def client_config():
         "pageSize": settings.PAGE_SIZE,
         "pageSizeOptions": settings.PAGE_SIZE_OPTIONS,
         "tableCellMaxJSONSize": settings.TABLE_CELL_MAX_JSON_SIZE,
+        "disablePublicDashboards": current_org.get_setting("disable_public_dashboards"),
     }
 
     client_config.update(defaults)
