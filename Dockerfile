@@ -1,4 +1,4 @@
-FROM node:12 as frontend-builder
+FROM public.ecr.aws/docker/library/node:12 as frontend-builder
 
 # Controls whether to build the frontend assets
 ARG skip_frontend_build
@@ -23,7 +23,7 @@ COPY --chown=redash client /frontend/client
 COPY --chown=redash webpack.config.js /frontend/
 RUN if [ "x$skip_frontend_build" = "x" ] ; then npm run build; else mkdir -p /frontend/client/dist && touch /frontend/client/dist/multi_org.html && touch /frontend/client/dist/index.html; fi
 
-FROM --platform=linux/amd64 python:3.7-slim-buster
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.7-slim-buster
 
 EXPOSE 5000
 
