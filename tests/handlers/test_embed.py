@@ -1,3 +1,5 @@
+from mock.mock import patch
+
 from tests import BaseTestCase
 from redash.models import db
 
@@ -76,6 +78,7 @@ class TestPublicDashboard(BaseTestCase):
 
 
 class TestAPIPublicDashboard(BaseTestCase):
+
     def test_success(self):
         dashboard = self.factory.create_dashboard()
         api_key = self.factory.create_api_key(object=dashboard)
@@ -115,6 +118,35 @@ class TestAPIPublicDashboard(BaseTestCase):
             is_json=False,
         )
         self.assertEqual(res.status_code, 404)
+
+    def test_dashboard_public_disabled(self):
+        self.factory.org.settings['settings'] = {'disable_public_dashboards': True}
+        dashboard = self.factory.create_dashboard()
+        api_key = self.factory.create_api_key(object=dashboard)
+
+        res = self.make_request(
+            "get", "/api/dashboards/public/{}".format(api_key.api_key), is_json=False
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_share_dashboard_public_disabled(self):
+        self.factory.org.settings['settings'] = {'disable_public_dashboards': True}
+        dashboard = self.factory.create_dashboard()
+
+        res = self.make_request(
+            "post", "/api/dashboards/{}/share".format(dashboard.id), is_json=False
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_unshare_dashboard_public_disabled(self):
+        self.factory.org.settings['settings'] = {'disable_public_dashboards': True}
+        dashboard = self.factory.create_dashboard()
+        api_key = self.factory.create_api_key(object=dashboard)
+
+        res = self.make_request(
+            "delete", "/api/dashboards/{}/share".format(dashboard.id), is_json=False
+        )
+        self.assertEqual(res.status_code, 400)
 
     # Not relevant for now, as tokens in api_keys table are only created for dashboards. Once this changes, we should
     # add this test.
