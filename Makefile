@@ -25,12 +25,14 @@ down:
 bundle:
 	docker-compose run server bin/bundle-extensions
 
+# Ejecuta todos los tests del backend
 tests:
 	docker-compose run server tests
 
 lint:
 	./bin/flake8_tests.sh
 
+#Crea la bd para test y ejecuta los tests
 backend-unit-tests: up test_db
 	docker-compose run --rm --name tests server tests
 
@@ -55,3 +57,11 @@ redis-cli:
 
 bash:
 	docker-compose run --rm server bash
+
+# Crea nuevas migraciones en base a los cambios realizados en models
+create-migration:
+	docker-compose run --rm server manage db revision --autogenerate
+
+# Aplica en una BD las migraciones pendientes
+apply-migration:
+	docker-compose run --rm server manage db upgrade

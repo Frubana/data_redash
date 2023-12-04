@@ -172,6 +172,7 @@ const DashboardService = {
   favorites: params => axios.get("api/dashboards/favorites", { params }).then(transformResponse),
   favorite: ({ id }) => axios.post(`api/dashboards/${id}/favorite`),
   unfavorite: ({ id }) => axios.delete(`api/dashboards/${id}/favorite`),
+  execute: ({ id }) => axios.post(`api/dashboards/${id}/executions`),
 };
 
 _.extend(Dashboard, DashboardService);

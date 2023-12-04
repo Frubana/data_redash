@@ -25,9 +25,9 @@ class TestDashboardListGetResource(BaseTestCase):
         rv = self.make_request("get", "/api/dashboards")
 
         assert len(rv.json["results"]) == 3
-        assert set([result["id"] for result in rv.json["results"]]) == set(
-            [d1.id, d2.id, d3.id]
-        )
+        assert set([result["id"] for result in rv.json["results"]]) == {d1.id, d2.id, d3.id}
+        assert set([result["allowed_executions"] for result in rv.json["results"]]) == {None, None, None}
+        assert set([result["latest_executions"] for result in rv.json["results"]]) == {None, None, None}
 
     def test_filters_with_tags(self):
         d1 = self.factory.create_dashboard(tags=["test"])
@@ -56,7 +56,32 @@ class TestDashboardResourceGet(BaseTestCase):
         rv = self.make_request("get", "/api/dashboards/{0}".format(d1.id))
         self.assertEqual(rv.status_code, 200)
 
-        expected = serialize_dashboard(d1, with_widgets=True, with_favorite_state=False)
+        expected = serialize_dashboard(d1, with_widgets=True, with_favorite_state=False, with_executions=True,
+                                       executions=[])
+        actual = json_loads(rv.data)
+
+        self.assertResponseEqual(expected, actual)
+
+    def test_get_dashboard_with_allowed_executions(self):
+        d1 = self.factory.create_dashboard(allowed_executions=2)
+        rv = self.make_request("get", "/api/dashboards/{0}".format(d1.id))
+        self.assertEqual(rv.status_code, 200)
+
+        expected = serialize_dashboard(d1, with_widgets=True, with_favorite_state=False, with_executions=True,
+                                       executions=[])
+        actual = json_loads(rv.data)
+
+        self.assertResponseEqual(expected, actual)
+
+    def test_get_dashboard_with_latest_executions(self):
+        d1 = self.factory.create_dashboard()
+        e1 = self.factory.create_dashboard_execution(dashboard=d1)
+        executions = [e1]
+        rv = self.make_request("get", "/api/dashboards/{0}".format(d1.id))
+        self.assertEqual(rv.status_code, 200)
+
+        expected = serialize_dashboard(d1, with_widgets=True, with_favorite_state=False, with_executions=True,
+                                       executions=executions)
         actual = json_loads(rv.data)
 
         self.assertResponseEqual(expected, actual)
@@ -66,7 +91,8 @@ class TestDashboardResourceGet(BaseTestCase):
         rv = self.make_request("get", "/api/dashboards/{0}?legacy".format(d1.slug))
         self.assertEqual(rv.status_code, 200)
 
-        expected = serialize_dashboard(d1, with_widgets=True, with_favorite_state=False)
+        expected = serialize_dashboard(d1, with_widgets=True, with_favorite_state=False, with_executions=True,
+                                       executions=[])
         actual = json_loads(rv.data)
 
         self.assertResponseEqual(expected, actual)
@@ -232,3 +258,12 @@ class TestDashboardShareResourceDelete(BaseTestCase):
             "delete", "/api/dashboards/{}/share".format(dashboard.id), user=user
         )
         self.assertEqual(res.status_code, 200)
+
+
+class TestDashboardExecutionsResource(BaseTestCase):
+    def test_create_dashboard_execution(self):
+        d = self.factory.create_dashboard()
+
+        rv = self.make_request("post", f"/api/dashboards/{d.id}/executions")
+        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(rv.json["dashboard_id"], d.id)

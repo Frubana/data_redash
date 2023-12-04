@@ -1,3 +1,5 @@
+import datetime
+
 from flask import request, url_for
 from funcy import project, partial
 
@@ -193,8 +195,13 @@ class DashboardResource(BaseResource):
             fn = models.Dashboard.get_by_id_and_org
 
         dashboard = get_object_or_404(fn, dashboard_id, self.current_org)
+
+        one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        executions = models.DashboardExecutions.search(dashboard.id, one_day_ago)
+
         response = DashboardSerializer(
-            dashboard, with_widgets=True, user=self.current_user
+            dashboard, with_widgets=True, user=self.current_user, with_executions=True,
+            executions=executions
         ).serialize()
 
         api_key = models.ApiKey.get_by_object(dashboard)
@@ -435,3 +442,26 @@ class DashboardFavoriteListResource(BaseResource):
         )
 
         return response
+
+
+class DashboardExecutionsResource(BaseResource):
+
+    @require_permission("edit_dashboard")
+    def post(self, dashboard_id):
+        """
+        Creates a new execution for a dashboard.
+
+        :qparam number id: Id of dashboard.
+
+        Responds with a :ref:dashboard execution.
+        """
+
+        dashboard_execution = models.DashboardExecutions(dashboard_id=dashboard_id)
+        models.db.session.add(dashboard_execution)
+        models.db.session.commit()
+
+        self.record_event(
+            {"action": "execute", "object_id": dashboard_id, "object_type": "dashboard"}
+        )
+
+        return dashboard_execution.to_dict()

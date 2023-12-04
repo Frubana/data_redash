@@ -74,6 +74,11 @@ dashboard_factory = ModelFactory(
     org=1,
 )
 
+dashboard_executions_factory = ModelFactory(
+    redash.models.DashboardExecutions,
+    dashboard=dashboard_factory.create,
+)
+
 api_key_factory = ModelFactory(redash.models.ApiKey, object=dashboard_factory.create)
 
 query_factory = ModelFactory(
@@ -282,6 +287,13 @@ class Factory(object):
         args = {"user": self.user, "org": self.org}
         args.update(kwargs)
         return dashboard_factory.create(**args)
+
+    def create_dashboard_execution(self, **kwargs):
+        args = {
+            "dashboard": self.create_dashboard(),
+        }
+        args.update(kwargs)
+        return dashboard_executions_factory.create(**args)
 
     def create_query(self, **kwargs):
         args = {"user": self.user, "data_source": self.data_source, "org": self.org}

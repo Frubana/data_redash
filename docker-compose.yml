@@ -61,8 +61,12 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_HOST_AUTH_METHOD: "trust"
+    volumes:
+      - postgres-redash-data:/var/lib/postgresql/data
   email:
     image: djfarrelly/maildev
     ports:
       - "1080:80"
     restart: unless-stopped
+volumes:
+  postgres-redash-data: null

@@ -215,7 +215,8 @@ def serialize_alert(alert, full=True):
     return d
 
 
-def serialize_dashboard(obj, with_widgets=False, user=None, with_favorite_state=True):
+def serialize_dashboard(obj, with_widgets=False, user=None, with_favorite_state=True, with_executions=False,
+                        executions=None):
     layout = json_loads(obj.layout)
 
     widgets = []
@@ -243,6 +244,14 @@ def serialize_dashboard(obj, with_widgets=False, user=None, with_favorite_state=
     else:
         widgets = None
 
+    latest_executions = []
+
+    if with_executions:
+        for execution in executions:
+            latest_executions.append(execution.to_dict())
+    else:
+        latest_executions = None
+
     d = {
         "id": obj.id,
         "slug": obj.name_as_slug,
@@ -264,6 +273,8 @@ def serialize_dashboard(obj, with_widgets=False, user=None, with_favorite_state=
         "updated_at": obj.updated_at,
         "created_at": obj.created_at,
         "version": obj.version,
+        "allowed_executions": obj.allowed_executions,
+        "latest_executions": latest_executions
     }
 
     return d
