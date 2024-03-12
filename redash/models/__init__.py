@@ -393,7 +393,7 @@ class QueryResult(db.Model, QueryResultPersistence, BelongsToOrgMixin):
         )
 
         db.session.add(query_result)
-        logging.info("Inserted query (%s) data; id=%s", query_hash, query_result.id)
+        logging.info("Inserted query result (%s) data; id=%s", query_hash, query_result.id)
 
         return query_result
 
@@ -507,6 +507,7 @@ class Query(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model):
     tags = Column(
         "tags", MutableList.as_mutable(postgresql.ARRAY(db.Unicode)), nullable=True
     )
+    max_cache_time = Column(postgresql.DOUBLE_PRECISION, nullable=True)
 
     query_class = SearchBaseQuery
     __tablename__ = "queries"

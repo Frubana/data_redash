@@ -1,4 +1,5 @@
 import logging
+import time
 import re
 import sqlite3
 
@@ -11,7 +12,8 @@ from redash.query_runner import (
     register,
     JobTimeoutException,
 )
-from redash.utils import json_dumps, json_loads
+from redash.tasks.alerts import check_alerts_for_query
+from redash.utils import json_dumps, json_loads, gen_query_hash, utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -61,25 +63,56 @@ def _annotate_query(query_runner, query, user):
 
 def get_query_results(user, query_id, bring_from_cache):
     query = _load_query(user, query_id)
-    
+
     if query.is_archived and not has_permission('admin', user):
             raise Exception("The query {} is archived and cannot be executed.".format(query.id))
-        
+
     if bring_from_cache:
         if query.latest_query_data_id is not None:
             results = query.latest_query_data.data
         else:
             raise Exception("No cached result available for query {}.".format(query.id))
     else:
-        query_runner = query.data_source.query_runner
-        annotated_query = _annotate_query(query_runner, query, user)
-        results, error = query_runner.run_query(
-            annotated_query, user
-        )
-        if error:
-            raise Exception("Failed loading results for query id {}. Error: {}".format(query.id, error))
-        else:
-            results = json_loads(results)
+        execute_query = True
+        started_at = time.time()
+
+        if query.max_cache_time:
+            query_result = models.QueryResult.get_latest(query.data_source, query.query_text, query.max_cache_time)
+
+            if query_result:
+                logger.info(f'Found Query Result Cache for intermediate query id=%s.', query.id)
+                results = query_result.data
+                execute_query = False
+
+        if execute_query:
+            query_runner = query.data_source.query_runner
+            annotated_query = _annotate_query(query_runner, query, user)
+            results, error = query_runner.run_query(
+                annotated_query, user
+            )
+            run_time = time.time() - started_at
+
+            if error:
+                raise Exception("Failed loading results for query id {}. Error: {}".format(query.id, error))
+            else:
+                query_hash = gen_query_hash(query.query_text)
+                logger.info(f'Saving intermediate result of query (%s) id=%s in Query Result', query_hash, query.id)
+                query_result = models.QueryResult.store_result(
+                    query.data_source.org_id,
+                    query.data_source,
+                    query_hash,
+                    query.query_text,
+                    results,
+                    run_time,
+                    utcnow()
+                )
+                updated_query_ids = models.Query.update_latest_result(query_result)
+                models.db.session.commit()
+                logger.info("checking_alerts")
+                for query_id in updated_query_ids:
+                    check_alerts_for_query.delay(query_id)
+                results = json_loads(results)
+                logger.info("finished")
 
     return results
 
