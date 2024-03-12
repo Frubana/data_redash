@@ -3,6 +3,7 @@ from unittest import TestCase
 
 import pytest
 import mock
+import datetime
 
 from redash.query_runner.query_results import (
     CreateTableError,
@@ -14,9 +15,10 @@ from redash.query_runner.query_results import (
     get_query_results,
     fix_column_name,
 )
-
+from redash import models
 from redash.utils import json_dumps
 from tests import BaseTestCase
+from redash.utils import utcnow
 
 
 class TestExtractQueryIds(TestCase):
@@ -202,3 +204,31 @@ class TestGetQueryResult(BaseTestCase):
             query_result_data = {"columns": [], "rows": []}
             qr.return_value = (json_dumps(query_result_data), None)
             self.assertEqual(query_result_data, get_query_results(self.factory.user, query.id, False))
+
+            # Check if the last query result is the data of the last execution.
+            found_query_result = models.QueryResult.get_latest(query_result.data_source, query_result.query_text, 60)
+            self.assertEqual(query_result_data, found_query_result.data)
+
+
+    def test_query_cached_with_max_cache_time(self):
+        query_result = self.factory.create_query_result()
+        query = self.factory.create_query(latest_query_data=query_result, max_cache_time=60)
+
+        self.assertEqual(query_result.data, get_query_results(self.factory.user, query.id, False))
+
+    def test_query_non_cached_with_max_cache_time(self):
+        yesterday = utcnow() - datetime.timedelta(days=1)
+        query_result = self.factory.create_query_result(retrieved_at=yesterday)
+        query = self.factory.create_query(latest_query_data=query_result, max_cache_time=60)
+
+        from redash.query_runner.pg import PostgreSQL
+        with mock.patch.object(PostgreSQL, "run_query") as qr:
+            query_result_data = {"columns": [], "rows": []}
+            qr.return_value = (json_dumps(query_result_data), None)
+            self.assertEqual(query_result_data, get_query_results(self.factory.user, query.id, False))
+
+            # Check if the last query result is the data of the last execution.
+            found_query_result = models.QueryResult.get_latest(query_result.data_source, query_result.query_text, 60)
+            self.assertEqual(query_result_data, found_query_result.data)
+
+
