@@ -1,9 +1,12 @@
 from redash.query_runner import BaseSQLQueryRunner, BaseQueryRunner
+import datetime
+
 from tests import BaseTestCase
 
 from redash.models import db
 from redash.utils import json_dumps
 from redash.handlers.query_results import error_messages
+from redash.utils import utcnow
 
 
 class TestQueryResultsCacheHeaders(BaseTestCase):
@@ -391,6 +394,51 @@ class TestQueryResultAPI(BaseTestCase):
         )
         self.assertEqual(rv.status_code, 403)
 
+    def test_execute_new_query_with_max_age(self):
+        minutes_ago = utcnow() - datetime.timedelta(minutes=3)
+        query_result = self.factory.create_query_result(retrieved_at=minutes_ago)
+        query = self.factory.create_query(latest_query_data=query_result, max_cache_time=60)
+
+        rv = self.make_request(
+            "post", "/api/queries/{}/results".format(query.id), data={"parameters": {"max_age": 200}}
+        )
+
+        self.assertEqual(query_result.id, rv.json["query_result"]["id"])
+        self.assertEqual(rv.status_code, 200)
+
+
+    def test_execute_new_query_with_minus_max_age(self):
+        minutes_ago = utcnow() - datetime.timedelta(minutes=3)
+        query_result = self.factory.create_query_result(retrieved_at=minutes_ago)
+        query = self.factory.create_query(latest_query_data=query_result, max_cache_time=60)
+
+        rv = self.make_request(
+            "post", "/api/queries/{}/results".format(query.id), data={"parameters": {"max_age": -1}}
+        )
+
+        self.assertEqual(query_result.id, rv.json["query_result"]["id"])
+        self.assertEqual(rv.status_code, 200)
+
+    def test_execute_new_query_with_max_cache_time(self):
+        minutes_ago = utcnow() - datetime.timedelta(minutes=3)
+        query_result = self.factory.create_query_result(retrieved_at=minutes_ago)
+        query = self.factory.create_query(latest_query_data=query_result, max_cache_time=200)
+
+        rv = self.make_request(
+            "post", "/api/queries/{}/results".format(query.id), data={"parameters": {"max_age": 0}}
+        )
+
+        self.assertEqual(query_result.id, rv.json["query_result"]["id"])
+        self.assertEqual(rv.status_code, 200)
+
+    def test_execute_new_query_with_out_query_result_and_max_cache_time(self):
+        query = self.factory.create_query(max_cache_time=200)
+
+        rv = self.make_request(
+            "post", "/api/queries/{}/results".format(query.id), data={"parameters": {"max_age": 0}}
+        )
+
+        self.assertEqual(rv.status_code, 200)
 
 class TestQueryResultDropdownResource(BaseTestCase):
     def test_checks_for_access_to_the_query(self):
