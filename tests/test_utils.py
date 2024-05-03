@@ -9,6 +9,7 @@ from redash.utils import (
     json_dumps,
     generate_token,
     render_template,
+    get_cache
 )
 
 
@@ -80,7 +81,7 @@ class TestGenerateToken(TestCase):
     def test_format(self):
         token = generate_token(40)
         self.assertRegex(token, r"[a-zA-Z0-9]{40}")
-        
+
 class TestRenderTemplate(TestCase):
     def test_render(self):
         app = create_app()
@@ -92,3 +93,27 @@ class TestRenderTemplate(TestCase):
             ]
             self.assertIn('Failure Unit Test',html)
             self.assertIn('Failure Unit Test',text)
+
+class TestGetMaxCacheTime(TestCase):
+    def test_higher_max_age(self):
+        # Comprueba que cuando max_age es mayor, se selecciona max_age
+        self.assertEqual(get_cache(500, 300), 500)
+
+    def test_higher_max_cache_time(self):
+        # Comprueba que cuando max_cache_time es mayor, se selecciona max_cache_time
+        self.assertEqual(get_cache(200, 400), 400)
+
+    def test_equal_values(self):
+        # Comprueba que cuando ambos valores son iguales, se devuelve ese valor
+        self.assertEqual(get_cache(300, 300), 300)
+
+    def test_negative_values(self):
+        # Comprueba el comportamiento con valores negativos
+        self.assertEqual(get_cache(-100, 300), 300)
+        self.assertEqual(get_cache(300, -100), 300)
+
+    def test_zero_values(self):
+        # Comprueba el comportamiento cuando uno de los valores es cero
+        self.assertEqual(get_cache(0, 300), 300)
+        self.assertEqual(get_cache(300, 0), 300)
+
