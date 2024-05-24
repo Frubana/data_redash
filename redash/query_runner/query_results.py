@@ -12,8 +12,10 @@ from redash.query_runner import (
     register,
     JobTimeoutException,
 )
-from redash.tasks.alerts import check_alerts_for_query
-from redash.utils import json_dumps, json_loads, gen_query_hash, utcnow
+from redash.utils import json_dumps, json_loads, gen_query_hash
+from redash.tasks import Job
+from redash.serializers import serialize_job
+from redash.tasks.queries import enqueue_query
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +58,8 @@ def _annotate_query(query_runner, query, user):
     metadata["Username"] = user.email
     metadata["query_id"] = query.id
     metadata["Scheduled"] = query.schedule is not None
-    #metadata["Job ID"] =  job.id # esta informacion se encuentra en execution.py#246
-    #se deberia pasar toda la metadata del executor cuando se llaman al run_query(), pero hay que modificar todos los query_runners
+    # metadata["Job ID"] =  job.id # esta informacion se encuentra en execution.py#246
+    # se deberia pasar toda la metadata del executor cuando se llaman al run_query(), pero hay que modificar todos los query_runners
     return query_runner.annotate_query(query.query_text, metadata)
 
 
@@ -65,7 +67,7 @@ def get_query_results(user, query_id, bring_from_cache):
     query = _load_query(user, query_id)
 
     if query.is_archived and not has_permission('admin', user):
-            raise Exception("The query {} is archived and cannot be executed.".format(query.id))
+        raise Exception("The query {} is archived and cannot be executed.".format(query.id))
 
     if bring_from_cache:
         if query.latest_query_data_id is not None:
@@ -74,7 +76,6 @@ def get_query_results(user, query_id, bring_from_cache):
             raise Exception("No cached result available for query {}.".format(query.id))
     else:
         execute_query = True
-        started_at = time.time()
 
         if query.max_cache_time:
             query_result = models.QueryResult.get_latest(query.data_source, query.query_text, query.max_cache_time)
@@ -85,36 +86,46 @@ def get_query_results(user, query_id, bring_from_cache):
                 execute_query = False
 
         if execute_query:
-            query_runner = query.data_source.query_runner
-            annotated_query = _annotate_query(query_runner, query, user)
-            results, error = query_runner.run_query(
-                annotated_query, user
+            error = None
+            query_result_id = 0
+
+            # only 1 concurrent execution of a query
+            job = enqueue_query(
+                query.query_text,
+                query.data_source,
+                user.id,
+                user.is_api_user(),
+                metadata={
+                    "Username": repr(user) if user.is_api_user() else user.email,
+                    "query_id": query_id,
+                },
             )
-            run_time = time.time() - started_at
+
+            job_id = job.id
+
+            while True:
+                job_dict = serialize_job(Job.fetch(job_id))
+
+                if job_dict['job']['status'] in [1, 2]:
+                    time.sleep(1)
+                    continue
+                if job_dict['job']['status'] == 4:
+                    error = job_dict['job']['error']
+                    break
+                if job_dict['job']['status'] == 3:
+                    query_result_id = job_dict['job']['query_result_id']
+                    break
 
             if error:
                 raise Exception("Failed loading results for query id {}. Error: {}".format(query.id, error))
             else:
                 query_hash = gen_query_hash(query.query_text)
-                logger.info(f'Saving intermediate result of query (%s) id=%s in Query Result', query_hash, query.id)
-                query_result = models.QueryResult.store_result(
-                    query.data_source.org_id,
-                    query.data_source,
-                    query_hash,
-                    query.query_text,
-                    results,
-                    run_time,
-                    utcnow()
-                )
-                updated_query_ids = models.Query.update_latest_result(query_result)
-                models.db.session.commit()
-                logger.info("checking_alerts")
-                for query_id in updated_query_ids:
-                    check_alerts_for_query.delay(query_id)
-                results = json_loads(results)
-                logger.info("finished")
+                logger.info(f'Retrieving intermediate result of query (%s) id=%s in Query Result', query_hash, query.id)
 
-    return results
+                query_result = models.QueryResult.get_by_id_and_org(query_result_id, user.org_id)
+                results = query_result.data
+
+    return json_loads(results)
 
 
 def create_tables_from_query_ids(user, connection, query_ids, cached_query_ids=[]):
