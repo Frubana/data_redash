@@ -479,5 +479,10 @@ class JobResource(BaseResource):
         """
         Cancel a query job in progress.
         """
+        # TODO hay un caso que es cuando se manda a cancelar una query_result,
+        # si el job de esa query mando a ejecutar nuevas queries, es decir que genero nuevos jobs, estos
+        # jobs no se van a cancelar por que no esta guardado en ningun lugar el id de los jobs asociados al id del job
+        # principal. Tocaria guardar en redis los ids de los jobs hijos del padre y aqui iterar y matarlos, el tema es
+        # como obtener el id del job padre, en el mismo job.
         job = Job.fetch(job_id)
         job.cancel()

@@ -125,7 +125,7 @@ def get_query_results(user, query_id, bring_from_cache):
                 query_result = models.QueryResult.get_by_id_and_org(query_result_id, user.org_id)
                 results = query_result.data
 
-    return json_loads(results)
+    return results
 
 
 def create_tables_from_query_ids(user, connection, query_ids, cached_query_ids=[]):
