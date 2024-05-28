@@ -89,6 +89,8 @@ def get_query_results(user, query_id, bring_from_cache):
             error = None
             query_result_id = 0
 
+            query_hash = gen_query_hash(query.query_text)
+
             # only 1 concurrent execution of a query
             job = enqueue_query(
                 query.query_text,
@@ -108,6 +110,7 @@ def get_query_results(user, query_id, bring_from_cache):
 
                 if job_dict['job']['status'] in [1, 2]:
                     time.sleep(1)
+                    logger.info(f'The intermediate query query_hash=%s id=%s is still executing.', query_hash, query.id)
                     continue
                 if job_dict['job']['status'] == 4:
                     error = job_dict['job']['error']
@@ -116,16 +119,18 @@ def get_query_results(user, query_id, bring_from_cache):
                     query_result_id = job_dict['job']['query_result_id']
                     break
 
+
             if error:
-                raise Exception("Failed loading results for query id {}. Error: {}".format(query.id, error))
+                raise Exception("Failed loading results for query query_hash={} id={}. Error: {}"
+                                .format(query_hash, query.id, error))
             else:
-                query_hash = gen_query_hash(query.query_text)
-                logger.info(f'Retrieving intermediate result of query (%s) id=%s in Query Result', query_hash, query.id)
+                logger.info(f'Retrieving intermediate result of query query_hash=%s id=%s in Query Result'
+                            , query_hash, query.id)
 
                 query_result = models.QueryResult.get_by_id(query_result_id)
 
                 if user.org_id != query_result.org_id:
-                    raise PermissionError("The Sub Query id {} not belongs to the organization of the user.".format(query.id))
+                    raise PermissionError("The intermediate query id {} not belongs to the organization of the user.".format(query.id))
 
                 results = query_result.data
 

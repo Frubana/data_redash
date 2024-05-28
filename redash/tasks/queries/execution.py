@@ -31,7 +31,7 @@ def enqueue_query(
     query, data_source, user_id, is_api_key=False, scheduled_query=None, metadata={}
 ):
     query_hash = gen_query_hash(query)
-    logger.info("Inserting job for %s with metadata=%s", query_hash, metadata)
+    logger.info("Inserting job for query query_hash=%s with metadata=%s", query_hash, metadata)
     try_count = 0
     job = None
 
@@ -43,7 +43,7 @@ def enqueue_query(
             pipe.watch(_job_lock_id(query_hash, data_source.id))
             job_id = pipe.get(_job_lock_id(query_hash, data_source.id))
             if job_id:
-                logger.info("[%s] Found existing job: %s", query_hash, job_id)
+                logger.info("query_hash=%s Found existing job: %s", query_hash, job_id)
                 job_complete = None
                 job_cancelled = None
 
@@ -65,7 +65,7 @@ def enqueue_query(
                 lock_is_irrelevant = job_complete or job_cancelled or not job_exists
 
                 if lock_is_irrelevant:
-                    logger.info("[%s] %s, removing lock", query_hash, message)
+                    logger.info("query_hash=%s %s, removing lock", query_hash, message)
                     redis_connection.delete(_job_lock_id(query_hash, data_source.id))
                     job = None
 
