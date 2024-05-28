@@ -401,6 +401,10 @@ class QueryResult(db.Model, QueryResultPersistence, BelongsToOrgMixin):
     def groups(self):
         return self.data_source.groups
 
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter(cls.id == _id).one()
+
 
 def should_schedule_next(
     previous_iteration, now, interval, time=None, day_of_week=None, failures=0
