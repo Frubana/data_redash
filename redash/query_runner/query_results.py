@@ -122,7 +122,11 @@ def get_query_results(user, query_id, bring_from_cache):
                 query_hash = gen_query_hash(query.query_text)
                 logger.info(f'Retrieving intermediate result of query (%s) id=%s in Query Result', query_hash, query.id)
 
-                query_result = models.QueryResult.get_by_id_and_org(query_result_id, user.org_id)
+                query_result = models.QueryResult.get_by_id(query_result_id)
+
+                if user.org_id != query_result.org_id:
+                    raise PermissionError("The Sub Query id {} not belongs to the organization of the user.".format(query.id))
+
                 results = query_result.data
 
     return results
