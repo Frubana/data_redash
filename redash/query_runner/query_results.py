@@ -87,6 +87,7 @@ def get_query_results(user, query_id, bring_from_cache):
 
         if execute_query:
             error = None
+            has_error = False
             query_result_id = 0
 
             query_hash = gen_query_hash(query.query_text)
@@ -114,15 +115,21 @@ def get_query_results(user, query_id, bring_from_cache):
                     continue
                 if job_dict['job']['status'] == 4:
                     error = job_dict['job']['error']
+                    has_error = True
                     break
                 if job_dict['job']['status'] == 3:
                     query_result_id = job_dict['job']['query_result_id']
                     break
 
-
-            if error:
-                raise Exception("Failed loading results for query query_hash={} id={}. Error: {}"
-                                .format(query_hash, query.id, error))
+            if has_error:
+                if error:
+                    raise Exception(
+                        "Failed loading results for query query_hash={} id={}. Error: {}".format(query_hash, query.id,
+                                                                                                 error))
+                else:
+                    raise Exception(
+                        "Failed loading results for query query_hash={} id={}. Unknown Error: Worker Killed by SIGKILL"
+                        .format(query_hash, query.id,))
             else:
                 logger.info(f'Retrieving intermediate result of query query_hash=%s id=%s in Query Result'
                             , query_hash, query.id)
