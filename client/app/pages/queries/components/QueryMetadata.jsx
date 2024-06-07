@@ -6,6 +6,7 @@ import { Moment } from "@/components/proptypes";
 import TimeAgo from "@/components/TimeAgo";
 import SchedulePhrase from "@/components/queries/SchedulePhrase";
 import { IMG_ROOT } from "@/services/data-source";
+import { currentUser } from "@/services/auth";
 
 import "./QueryMetadata.less";
 
@@ -57,12 +58,14 @@ export default function QueryMetadata({ query, dataSource, layout, onEditSchedul
             Refresh Schedule
           </span>
           <span className="query-metadata-value">
-            <SchedulePhrase
-              isLink={isFunction(onEditSchedule)}
-              isNew={query.isNew()}
-              schedule={query.schedule}
-              onClick={onEditSchedule}
-            />
+            {(currentUser.isAdmin || currentUser.hasPermission("edit_query_schedule")) && (
+                <SchedulePhrase
+                isLink={isFunction(onEditSchedule)}
+                isNew={query.isNew()}
+                schedule={query.schedule}
+                onClick={onEditSchedule}
+              />
+            )}
           </span>
         </div>
       </div>
