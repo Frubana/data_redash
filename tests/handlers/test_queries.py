@@ -1,6 +1,6 @@
 from tests import BaseTestCase
 from redash import models
-from redash.models import db
+from redash.models import db, Group
 
 from redash.serializers import serialize_query
 from redash.permissions import ACCESS_TYPE_MODIFY
@@ -86,7 +86,7 @@ class TestQueryResourceGet(BaseTestCase):
 class TestQueryResourcePost(BaseTestCase):
     def test_update_query(self):
         admin = self.factory.create_admin()
-        query = self.factory.create_query()
+        query = self.factory.create_query(schedule={"interval": "1600"})
 
         new_ds = self.factory.create_data_source()
         new_qr = self.factory.create_query_result()
@@ -108,53 +108,9 @@ class TestQueryResourcePost(BaseTestCase):
         self.assertEqual(rv.json["query"], data["query"])
         self.assertEqual(rv.json["data_source_id"], data["data_source_id"])
         self.assertEqual(rv.json["latest_query_data_id"], data["latest_query_data_id"])
-        self.assertEqual(rv.json["schedule"]["interval"], data["schedule"]["interval"])
+        self.assertEqual(rv.json["schedule"]["interval"], query["schedule"]["interval"])
 
-    def test_update_schedule_archived_query(self):
-        other_user = self.factory.create_user()
-        query = self.factory.create_query(is_archived=True, user=other_user)
 
-        new_ds = self.factory.create_data_source()
-        new_qr = self.factory.create_query_result()
-
-        data = {
-            "name": "Testing",
-            "query": "select 2",
-            "latest_query_data_id": new_qr.id,
-            "data_source_id": new_ds.id,
-            "schedule": {"interval": "3600"},
-        }
-
-        response = self.make_request(
-            "post", "/api/queries/{0}".format(query.id), data=data, user=other_user
-        )
-        self.assertEqual(400, response.status_code)
-
-    def test_update_schedule_archived_query_admin(self):
-        admin = self.factory.create_admin()
-        query = self.factory.create_query(is_archived=True)
-
-        new_ds = self.factory.create_data_source()
-        new_qr = self.factory.create_query_result()
-
-        data = {
-            "name": "Testing",
-            "query": "select 2",
-            "latest_query_data_id": new_qr.id,
-            "data_source_id": new_ds.id,
-            "schedule": {"interval": "3600"},
-        }
-
-        rv = self.make_request(
-            "post", "/api/queries/{0}".format(query.id), data=data, user=admin
-        )
-        self.assertEqual(rv.status_code, 200)
-        self.assertEqual(rv.json["name"], data["name"])
-        self.assertEqual(rv.json["last_modified_by"]["id"], admin.id)
-        self.assertEqual(rv.json["query"], data["query"])
-        self.assertEqual(rv.json["data_source_id"], data["data_source_id"])
-        self.assertEqual(rv.json["latest_query_data_id"], data["latest_query_data_id"])
-        self.assertEqual(rv.json["schedule"]["interval"], data["schedule"]["interval"])
 
     def test_raises_error_in_case_of_conflict(self):
         q = self.factory.create_query()
@@ -588,3 +544,89 @@ WHERE x=1
         )
 
         self.assertEqual(rv.json["query"], expected)
+
+
+class TestQueryScheduleResourcePost(BaseTestCase):
+
+    def test_update_query_with_permission(self):
+        group = self.factory.create_group(permissions=[Group.EDIT_QUERY_SCHEDULE_PERMISSION])
+        user = self.factory.create_user(group_ids=[group.id])
+        query = self.factory.create_query(user=user)
+
+        new_ds = self.factory.create_data_source()
+
+        data = {
+            "data_source_id": new_ds.id,
+            "schedule": {"interval": "3600"},
+        }
+
+        rv = self.make_request(
+            "post", "/api/queries/{0}/schedule".format(query.id), data=data, user=user
+        )
+        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(rv.json["last_modified_by"]["id"], user.id)
+        self.assertEqual(rv.json["schedule"]["interval"], data["schedule"]["interval"])
+
+    def test_update_query_without_permission(self):
+        group = self.factory.create_group(permissions=['without_any_real_permission'])
+        user = self.factory.create_user(group_ids=[group.id])
+        query = self.factory.create_query(user=user)
+
+        new_ds = self.factory.create_data_source()
+
+        data = {
+            "data_source_id": new_ds.id,
+            "schedule": {"interval": "3600"},
+        }
+
+        rv = self.make_request(
+            "post", "/api/queries/{0}/schedule".format(query.id), data=data, user=user
+        )
+        self.assertEqual(rv.status_code, 403)
+
+    def test_update_schedule_archived_query(self):
+        group = self.factory.create_group(permissions=[Group.EDIT_QUERY_SCHEDULE_PERMISSION])
+        other_user = self.factory.create_user(group_ids=[group.id])
+        query = self.factory.create_query(is_archived=True, user=other_user)
+
+        new_ds = self.factory.create_data_source()
+        new_qr = self.factory.create_query_result()
+
+        data = {
+            "name": "Testing",
+            "query": "select 2",
+            "latest_query_data_id": new_qr.id,
+            "data_source_id": new_ds.id,
+            "schedule": {"interval": "3600"},
+        }
+
+        response = self.make_request(
+            "post", "/api/queries/{0}/schedule".format(query.id), data=data, user=other_user
+        )
+        self.assertEqual(400, response.status_code)
+
+    def test_update_schedule_archived_query_admin(self):
+        admin = self.factory.create_admin()
+        query = self.factory.create_query(is_archived=True)
+
+        new_ds = self.factory.create_data_source()
+        new_qr = self.factory.create_query_result()
+
+        data = {
+            "name": "Testing",
+            "query": "select 2",
+            "latest_query_data_id": new_qr.id,
+            "data_source_id": new_ds.id,
+            "schedule": {"interval": "3600"},
+        }
+
+        rv = self.make_request(
+            "post", "/api/queries/{0}/schedule".format(query.id), data=data, user=admin
+        )
+        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(rv.json["name"], query["name"])
+        self.assertEqual(rv.json["last_modified_by"]["id"], admin.id)
+        self.assertEqual(rv.json["query"], query["query"])
+        self.assertEqual(rv.json["data_source_id"], query["data_source_id"])
+        self.assertEqual(rv.json["latest_query_data_id"], query["latest_query_data_id"])
+        self.assertEqual(rv.json["schedule"]["interval"], data["schedule"]["interval"])

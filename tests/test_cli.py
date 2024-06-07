@@ -299,27 +299,27 @@ class GroupCommandTests(BaseTestCase):
         Type: builtin
         Organization: default
         Permissions: [admin,super_admin]
-        Users: 
+        Users:
         --------------------
         Id: 4
         Name: agroup
         Type: regular
         Organization: default
         Permissions: [list_dashboards]
-        Users: 
+        Users:
         --------------------
         Id: 5
         Name: bgroup
         Type: regular
         Organization: default
         Permissions: [list_dashboards]
-        Users: 
+        Users:
         --------------------
         Id: 2
         Name: default
         Type: builtin
         Organization: default
-        Permissions: [create_dashboard,create_query,edit_dashboard,edit_query,view_query,view_source,execute_query,list_users,schedule_query,list_dashboards,list_alerts,list_data_sources]
+        Permissions: [create_dashboard,create_query,edit_dashboard,edit_query,view_query,view_source,execute_query,list_users,schedule_query,list_dashboards,list_alerts,list_data_sources,edit_query_schedule]
         Users: Fred Foobar
         --------------------
         Id: 3
@@ -327,8 +327,10 @@ class GroupCommandTests(BaseTestCase):
         Type: regular
         Organization: default
         Permissions: [list_dashboards]
-        Users: 
+        Users:
         """
+        print('********************')
+        print(result.output)
         self.assertMultiLineEqual(result.output, textwrap.dedent(output).lstrip())
 
 
