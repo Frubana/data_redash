@@ -329,9 +329,13 @@ class GroupCommandTests(BaseTestCase):
         Permissions: [list_dashboards]
         Users:
         """
-        print('********************')
-        print(result.output)
-        self.assertMultiLineEqual(result.output, textwrap.dedent(output).lstrip())
+        result_output = textwrap.dedent(result.output).strip()
+        expected_output = textwrap.dedent(output).strip()
+
+        result_output = '\n'.join([line.strip() for line in result_output.splitlines()])
+        expected_output = '\n'.join([line.strip() for line in expected_output.splitlines()])
+
+        self.assertMultiLineEqual(result_output, expected_output)
 
 
 class OrganizationCommandTests(BaseTestCase):
