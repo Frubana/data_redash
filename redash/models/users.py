@@ -257,6 +257,7 @@ class User(
 
 @generic_repr("id", "name", "type", "org_id")
 class Group(db.Model, BelongsToOrgMixin):
+    EDIT_QUERY_SCHEDULE_PERMISSION = "edit_query_schedule"
     DEFAULT_PERMISSIONS = [
         "create_dashboard",
         "create_query",
@@ -270,6 +271,7 @@ class Group(db.Model, BelongsToOrgMixin):
         "list_dashboards",
         "list_alerts",
         "list_data_sources",
+        EDIT_QUERY_SCHEDULE_PERMISSION
     ]
 
     BUILTIN_GROUP = "builtin"

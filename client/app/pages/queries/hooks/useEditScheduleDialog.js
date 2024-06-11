@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import ScheduleDialog from "@/components/queries/ScheduleDialog";
 import { clientConfig } from "@/services/auth";
 import { policy } from "@/services/policy";
-import useUpdateQuery from "./useUpdateQuery";
+import useUpdateQuerySchedule from "./useUpdateQuerySchedule";
 import useQueryFlags from "./useQueryFlags";
 import recordEvent from "@/services/recordEvent";
 
@@ -11,7 +11,7 @@ export default function useEditScheduleDialog(query, onChange) {
   // We won't use flags that depend on data source
   const queryFlags = useQueryFlags(query);
 
-  const updateQuery = useUpdateQuery(query, onChange);
+  const updateQuerySchedule = useUpdateQuerySchedule(query, onChange);
 
   return useCallback(() => {
     if (!queryFlags.canEdit || !queryFlags.canSchedule) {
@@ -27,7 +27,7 @@ export default function useEditScheduleDialog(query, onChange) {
       refreshOptions,
     }).onClose(schedule => {
       recordEvent("edit_schedule", "query", query.id);
-      updateQuery({ schedule });
+      updateQuerySchedule({ schedule });
     });
-  }, [query.id, query.schedule, queryFlags.canEdit, queryFlags.canSchedule, updateQuery]);
+  }, [query.id, query.schedule, queryFlags.canEdit, queryFlags.canSchedule, updateQuerySchedule]);
 }

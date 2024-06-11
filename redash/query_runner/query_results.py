@@ -113,13 +113,17 @@ def get_query_results(user, query_id, bring_from_cache):
                     time.sleep(1)
                     logger.info(f'The intermediate query query_hash=%s id=%s is still executing.', query_hash, query.id)
                     continue
+                if job_dict['job']['status'] == 3:
+                    query_result_id = job_dict['job']['query_result_id']
+                    break
                 if job_dict['job']['status'] == 4:
                     error = job_dict['job']['error']
                     has_error = True
                     break
-                if job_dict['job']['status'] == 3:
-                    query_result_id = job_dict['job']['query_result_id']
-                    break
+                logger.warning(f'Unknown status for the job of the intermediate query query_hash=%s id=%s.', query_hash, query.id)
+                error = 'Unknown Job Status'
+                has_error = True
+                break
 
             if has_error:
                 if error:

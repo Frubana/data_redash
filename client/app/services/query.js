@@ -394,6 +394,7 @@ const QueryService = {
   favorites: params => axios.get("api/queries/favorites", { params }).then(mapResults),
   favorite: data => axios.post(`api/queries/${data.id}/favorite`),
   unfavorite: data => axios.delete(`api/queries/${data.id}/favorite`),
+  saveSchedule: data => axios.post(`api/queries/${data.id}/schedule`, data).then(getQuery),
 };
 
 QueryService.newQuery = function newQuery() {

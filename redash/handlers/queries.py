@@ -17,6 +17,7 @@ from redash.handlers.base import (
     order_results as _order_results,
 )
 from redash.handlers.query_results import run_query
+from redash.models import Group
 from redash.permissions import (
     can_modify,
     not_view_only,
@@ -347,12 +348,6 @@ class QueryResource(BaseResource):
         require_object_modify_permission(query, self.current_user)
         require_access_to_dropdown_queries(self.current_user, query_def)
 
-        if query.is_archived and not self.current_user.has_permission('admin') and "schedule" in query_def and query_def["schedule"] is not None:
-            abort(
-                400,
-                message="The query {} is archived and the schedule cannot be activated.".format(query.id),
-            )
-
         for field in [
             "id",
             "created_at",
@@ -362,6 +357,7 @@ class QueryResource(BaseResource):
             "user",
             "last_modified_by",
             "org",
+            "schedule",
         ]:
             query_def.pop(field, None)
 
@@ -430,6 +426,59 @@ class QueryResource(BaseResource):
         query.archive(self.current_user)
         models.db.session.commit()
 
+
+class QueryScheduleResource(BaseResource):
+    @require_permission(Group.EDIT_QUERY_SCHEDULE_PERMISSION)
+    def post(self, query_id):
+        """
+        Modify the schedule of a query.
+
+        :param query_id: ID of query to update
+        :<json number data_source_id: The ID of the data source this query will run on
+        :<json string query: Query text
+        :<json string name:
+        :<json string description:
+        :<json string schedule: Schedule interval, in seconds, for repeated execution of this query
+        :<json object options: Query options
+
+        Responds with the updated :ref:`query <query-response-label>` object.
+        """
+        query = get_object_or_404(
+            models.Query.get_by_id_and_org, query_id, self.current_org
+        )
+        query_def = request.get_json(force=True)
+
+        require_object_modify_permission(query, self.current_user)
+        require_access_to_dropdown_queries(self.current_user, query_def)
+
+        if query.is_archived and not self.current_user.has_permission('admin') and "schedule" in query_def and query_def["schedule"] is not None:
+            abort(
+                400,
+                message="The query {} is archived and the schedule cannot be activated.".format(query.id),
+            )
+
+        query_schedule = {
+            "schedule": query_def["schedule"],
+            "last_modified_by":  self.current_user,
+            "changed_by": self.current_user,
+        }
+
+        # SQLAlchemy handles the case where a concurrent transaction beats us
+        # to the update. But we still have to make sure that we're not starting
+        # out behind.
+        if "version" in query_def:
+            query_schedule["version"] = query_def["version"]
+            if query_def["version"] != query.version:
+                abort(409)
+
+
+        try:
+            self.update_model(query, query_schedule)
+            models.db.session.commit()
+        except StaleDataError:
+            abort(409)
+
+        return QuerySerializer(query, with_visualizations=True).serialize()
 
 class QueryRegenerateApiKeyResource(BaseResource):
     @require_permission("edit_query")

@@ -1,10 +1,9 @@
 from passlib.apps import custom_app_context as pwd_context
 import redash.models
-from redash.models import db
+from redash.models import db, Group
 from redash.permissions import ACCESS_TYPE_MODIFY
 from redash.utils import gen_query_hash, utcnow
 from redash.utils.configuration import ConfigurationContainer
-
 
 class ModelFactory(object):
     def __init__(self, model, **kwargs):
@@ -54,6 +53,13 @@ org_factory = ModelFactory(
     name=Sequence("Org {}"),
     slug=Sequence("org{}.example.com"),
     settings={},
+)
+
+group_factory = ModelFactory(
+    redash.models.Group,
+    name="Grupo C",
+    type=Group.REGULAR_GROUP,
+    org_id=1,
 )
 
 data_source_factory = ModelFactory(
@@ -241,13 +247,15 @@ class Factory(object):
         args.update(kwargs)
         return user_factory.create(**args)
 
-    def create_group(self, **kwargs):
+    def create_group(self, save_db=False, **kwargs):
         args = {"name": "Group", "org": self.org}
 
         args.update(kwargs)
 
-        g = redash.models.Group(**args)
-        return g
+        if save_db:
+            return group_factory.create(**args)
+        else:
+            return redash.models.Group(**args)
 
     def create_alert(self, **kwargs):
         args = {"user": self.user, "query_rel": self.create_query()}

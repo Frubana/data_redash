@@ -61,6 +61,7 @@ from redash.handlers.queries import (
     QueryRecentResource,
     QueryRefreshResource,
     QueryResource,
+    QueryScheduleResource,
     QuerySearchResource,
     QueryTagsResource,
     QueryRegenerateApiKeyResource,
@@ -236,6 +237,7 @@ api.add_org_resource(
     QueryRefreshResource, "/api/queries/<query_id>/refresh", endpoint="query_refresh"
 )
 api.add_org_resource(QueryResource, "/api/queries/<query_id>", endpoint="query")
+api.add_org_resource(QueryScheduleResource, "/api/queries/<query_id>/schedule", endpoint="query_schedule")
 api.add_org_resource(
     QueryForkResource, "/api/queries/<query_id>/fork", endpoint="query_fork"
 )
