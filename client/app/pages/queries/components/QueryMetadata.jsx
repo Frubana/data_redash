@@ -51,24 +51,24 @@ export default function QueryMetadata({ query, dataSource, layout, onEditSchedul
           </div>
         </div>
       )}
-      <div className="query-metadata-item">
-        <div className="query-metadata-property">
-          <span className="query-metadata-label">
-            <span className="zmdi zmdi-refresh m-r-5" />
-            Refresh Schedule
-          </span>
-          <span className="query-metadata-value">
-            {currentUser.hasPermission("edit_query_schedule") && (
+      {currentUser.hasPermission("edit_query_schedule") && (
+        <div className="query-metadata-item">
+          <div className="query-metadata-property">
+            <span className="query-metadata-label">
+              <span className="zmdi zmdi-refresh m-r-5" />
+              Refresh Schedule
+            </span>
+            <span className="query-metadata-value">
                 <SchedulePhrase
                 isLink={isFunction(onEditSchedule)}
                 isNew={query.isNew()}
                 schedule={query.schedule}
                 onClick={onEditSchedule}
               />
-            )}
-          </span>
+            </span>
+          </div>
         </div>
-      </div>
+       )}
     </div>
   );
 }
