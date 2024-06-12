@@ -58,7 +58,7 @@ export default function QueryMetadata({ query, dataSource, layout, onEditSchedul
             Refresh Schedule
           </span>
           <span className="query-metadata-value">
-            {(currentUser.isAdmin || currentUser.hasPermission("edit_query_schedule")) && (
+            {currentUser.hasPermission("edit_query_schedule") && (
                 <SchedulePhrase
                 isLink={isFunction(onEditSchedule)}
                 isNew={query.isNew()}
