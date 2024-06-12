@@ -271,7 +271,6 @@ class Group(db.Model, BelongsToOrgMixin):
         "list_dashboards",
         "list_alerts",
         "list_data_sources",
-        EDIT_QUERY_SCHEDULE_PERMISSION
     ]
 
     BUILTIN_GROUP = "builtin"
