@@ -768,12 +768,14 @@ class Query(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model):
 
     @classmethod
     def all_groups_for_query_ids(cls, query_ids):
-        query = """SELECT group_id, view_only
+        query = """SELECT group_id, permissions, view_only
                    FROM queries
                    JOIN data_source_groups ON queries.data_source_id = data_source_groups.data_source_id
+                   JOIN groups g on g.id = data_source_groups.group_id
                    WHERE queries.id in :ids"""
 
-        return db.session.execute(query, {"ids": tuple(query_ids)}).fetchall()
+        return [(g["group_id"], {"view_only": g["view_only"], "permissions": g["permissions"]})
+                for g in db.session.execute(query, {"ids": tuple(query_ids)}).fetchall()]
 
     @classmethod
     def update_latest_result(cls, query_result):

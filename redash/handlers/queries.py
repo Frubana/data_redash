@@ -25,7 +25,6 @@ from redash.permissions import (
     require_admin_or_owner,
     require_object_modify_permission,
     require_permission,
-    require_permission_message,
     view_only,
 )
 from redash.utils import collect_parameters_from_request
@@ -200,7 +199,7 @@ def require_access_to_dropdown_queries(user, query_def, permission):
 
 
 class QueryListResource(BaseQueryListResource):
-    @require_permission_message(Group.SAVE_QUERY_PERMISSION, "You don't have permission to save this resource.")
+    @require_permission(Group.SAVE_QUERY_PERMISSION)
     def post(self):
         """
         Create a new query.
@@ -326,7 +325,8 @@ class MyQueriesResource(BaseResource):
 
 
 class QueryResource(BaseResource):
-    @require_permission_message(Group.SAVE_QUERY_PERMISSION, "You don't have permission to edit this resource.")
+
+    @require_permission(Group.SAVE_QUERY_PERMISSION)
     def post(self, query_id):
         """
         Modify a query.
@@ -430,6 +430,7 @@ class QueryResource(BaseResource):
 
 
 class QueryScheduleResource(BaseResource):
+
     @require_permission(Group.EDIT_QUERY_SCHEDULE_PERMISSION)
     def post(self, query_id):
         """

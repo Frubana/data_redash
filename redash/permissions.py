@@ -80,6 +80,8 @@ class RequirePermissions(object):
     def __call__(self, fn):
         @functools.wraps(fn)
         def decorated(*args, **kwargs):
+            if current_user.has_permission("admin"):
+                return fn(*args, **kwargs)
             if self.allow_one:
                 has_permissions = any([current_user.has_permission(permission) for permission in self.permissions])
             else:
@@ -94,10 +96,6 @@ class RequirePermissions(object):
 
 def require_permission(permission):
     return RequirePermissions((permission,))
-
-
-def require_permission_message(permission, message):
-    return RequirePermissions((permission,), message)
 
 
 def require_any_of_permission(permissions):
@@ -139,6 +137,7 @@ def can_modify(obj, user):
 def require_object_modify_permission(obj, user):
     if not can_modify(obj, user):
         abort(403)
+
 
 def has_permission(permission, user):
     return permission in user.permissions
