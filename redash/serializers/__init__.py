@@ -20,6 +20,7 @@ from .query_result import (
     serialize_query_result_to_dsv,
     serialize_query_result_to_xlsx,
 )
+from ..models import Group
 
 
 def public_widget(widget):
@@ -225,7 +226,7 @@ def serialize_dashboard(obj, with_widgets=False, user=None, with_favorite_state=
         for w in obj.widgets:
             if w.visualization_id is None:
                 widgets.append(serialize_widget(w))
-            elif user and has_access(w.visualization.query_rel, user, view_only):
+            elif user and has_access(w.visualization.query_rel, user, view_only, Group.EXECUTE_QUERY_PERMISSION):
                 widgets.append(serialize_widget(w))
             else:
                 widget = project(

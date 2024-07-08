@@ -8,11 +8,12 @@ from sqlalchemy.exc import IntegrityError
 
 from redash import models
 from redash.handlers.base import BaseResource, get_object_or_404, require_fields
+from redash.models import Group
 from redash.permissions import (
     require_access,
     require_admin,
     require_permission,
-    view_only,
+    view_only, has_access,
 )
 from redash.query_runner import (
     get_configuration_schema_for_query_runner_type,
@@ -39,7 +40,7 @@ class DataSourceResource(BaseResource):
         data_source = get_object_or_404(
             models.DataSource.get_by_id_and_org, data_source_id, self.current_org
         )
-        require_access(data_source, self.current_user, view_only)
+        require_access(data_source, self.current_user, view_only, Group.LIST_DATA_SOURCES_PERMISSION)
 
         ds = {}
         if self.current_user.has_permission("list_data_sources"):
@@ -47,9 +48,8 @@ class DataSourceResource(BaseResource):
             ds = data_source.to_dict(all=self.current_user.has_permission("admin"))
 
         # add view_only info, required for frontend permissions
-        ds["view_only"] = all(
-            project(data_source.groups, self.current_user.group_ids).values()
-        )
+        matching_groups = project(data_source.groups, self.current_user.group_ids)
+        ds["view_only"] = all([g['view_only'] for g in matching_groups.values()])
         self.record_event(
             {"action": "view", "object_id": data_source_id, "object_type": "datasource"}
         )
@@ -119,7 +119,7 @@ class DataSourceListResource(BaseResource):
             data_sources = models.DataSource.all(self.current_org)
         else:
             data_sources = models.DataSource.all(
-                self.current_org, group_ids=self.current_user.group_ids
+                self.current_org, group_ids=self.current_user.group_ids, permission=Group.EXECUTE_QUERY_PERMISSION
             )
 
         response = {}
@@ -129,9 +129,8 @@ class DataSourceListResource(BaseResource):
 
             try:
                 d = ds.to_dict()
-                d["view_only"] = all(
-                    project(ds.groups, self.current_user.group_ids).values()
-                )
+                matching_groups = project(ds.groups, self.current_user.group_ids)
+                ds["view_only"] = all([g['view_only'] for g in matching_groups.values()])
                 response[ds.id] = d
             except AttributeError:
                 logging.exception(
@@ -194,7 +193,7 @@ class DataSourceSchemaResource(BaseResource):
         data_source = get_object_or_404(
             models.DataSource.get_by_id_and_org, data_source_id, self.current_org
         )
-        require_access(data_source, self.current_user, view_only)
+        require_access(data_source, self.current_user, view_only, Group.LIST_DATA_SOURCES_PERMISSION)
         refresh = request.args.get("refresh") is not None
 
         if not refresh:

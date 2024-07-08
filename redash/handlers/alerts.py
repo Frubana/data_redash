@@ -4,6 +4,7 @@ from flask import request
 from funcy import project
 
 from redash import models
+from redash.models import Group
 from redash.serializers import serialize_alert
 from redash.handlers.base import BaseResource, get_object_or_404, require_fields
 from redash.permissions import (
@@ -20,7 +21,7 @@ class AlertResource(BaseResource):
         alert = get_object_or_404(
             models.Alert.get_by_id_and_org, alert_id, self.current_org
         )
-        require_access(alert, self.current_user, view_only)
+        require_access(alert, self.current_user, view_only, Group.LIST_ALERTS_PERMISSION)
         self.record_event(
             {"action": "view", "object_id": alert.id, "object_type": "alert"}
         )
@@ -86,7 +87,7 @@ class AlertListResource(BaseResource):
         require_fields(req, ("options", "name", "query_id"))
 
         query = models.Query.get_by_id_and_org(req["query_id"], self.current_org)
-        require_access(query, self.current_user, view_only)
+        require_access(query, self.current_user, view_only, Group.LIST_ALERTS_PERMISSION)
 
         alert = models.Alert(
             name=req["name"],
@@ -120,7 +121,7 @@ class AlertSubscriptionListResource(BaseResource):
         req = request.get_json(True)
 
         alert = models.Alert.get_by_id_and_org(alert_id, self.current_org)
-        require_access(alert, self.current_user, view_only)
+        require_access(alert, self.current_user, view_only, Group.LIST_ALERTS_PERMISSION)
         kwargs = {"alert": alert, "user": self.current_user}
 
         if "destination_id" in req:
@@ -147,7 +148,7 @@ class AlertSubscriptionListResource(BaseResource):
 
     def get(self, alert_id):
         alert = models.Alert.get_by_id_and_org(alert_id, self.current_org)
-        require_access(alert, self.current_user, view_only)
+        require_access(alert, self.current_user, view_only, Group.LIST_ALERTS_PERMISSION)
 
         subscriptions = models.AlertSubscription.all(alert_id)
         return [s.to_dict() for s in subscriptions]

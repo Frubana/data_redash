@@ -25,6 +25,7 @@ from redash.permissions import (
     require_admin_or_owner,
     require_object_modify_permission,
     require_permission,
+    require_permission_message,
     view_only,
 )
 from redash.utils import collect_parameters_from_request
@@ -179,7 +180,7 @@ class BaseQueryListResource(BaseResource):
         return response
 
 
-def require_access_to_dropdown_queries(user, query_def):
+def require_access_to_dropdown_queries(user, query_def, permission):
     parameters = query_def.get("options", {}).get("parameters", [])
     dropdown_query_ids = set(
         [str(p["queryId"]) for p in parameters if p["type"] == "query"]
@@ -195,11 +196,11 @@ def require_access_to_dropdown_queries(user, query_def):
                         "Please verify the dropdown query id you are trying to associate with this query.",
             )
 
-        require_access(dict(groups), user, view_only)
+        require_access(dict(groups), user, view_only, permission)
 
 
 class QueryListResource(BaseQueryListResource):
-    @require_permission("create_query")
+    @require_permission_message(Group.SAVE_QUERY_PERMISSION, "You don't have permission to save this resource.")
     def post(self):
         """
         Create a new query.
@@ -237,8 +238,8 @@ class QueryListResource(BaseQueryListResource):
         data_source = models.DataSource.get_by_id_and_org(
             query_def.pop("data_source_id"), self.current_org
         )
-        require_access(data_source, self.current_user, not_view_only)
-        require_access_to_dropdown_queries(self.current_user, query_def)
+        require_access(data_source, self.current_user, not_view_only, Group.SAVE_QUERY_PERMISSION)
+        require_access_to_dropdown_queries(self.current_user, query_def, Group.SAVE_QUERY_PERMISSION)
 
         for field in [
             "id",
@@ -325,7 +326,7 @@ class MyQueriesResource(BaseResource):
 
 
 class QueryResource(BaseResource):
-    @require_permission("edit_query")
+    @require_permission_message(Group.SAVE_QUERY_PERMISSION, "You don't have permission to edit this resource.")
     def post(self, query_id):
         """
         Modify a query.
@@ -346,7 +347,8 @@ class QueryResource(BaseResource):
         query_def = request.get_json(force=True)
 
         require_object_modify_permission(query, self.current_user)
-        require_access_to_dropdown_queries(self.current_user, query_def)
+        require_access_to_dropdown_queries(self.current_user, query_def, Group.SAVE_QUERY_PERMISSION)
+        require_access(query, self.current_user, not_view_only, Group.SAVE_QUERY_PERMISSION)
 
         for field in [
             "id",
@@ -371,7 +373,7 @@ class QueryResource(BaseResource):
             data_source = models.DataSource.get_by_id_and_org(
                 query_def["data_source_id"], self.current_org
             )
-            require_access(data_source, self.current_user, not_view_only)
+            require_access(data_source, self.current_user, not_view_only, Group.SAVE_QUERY_PERMISSION)
 
         query_def["last_modified_by"] = self.current_user
         query_def["changed_by"] = self.current_user
@@ -401,7 +403,7 @@ class QueryResource(BaseResource):
         q = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
-        require_access(q, self.current_user, view_only)
+        require_access(q, self.current_user, view_only, Group.VIEW_QUERY_PERMISSION)
 
         result = QuerySerializer(q, with_visualizations=True).serialize()
         result["can_edit"] = can_modify(q, self.current_user)
@@ -449,9 +451,11 @@ class QueryScheduleResource(BaseResource):
         query_def = request.get_json(force=True)
 
         require_object_modify_permission(query, self.current_user)
-        require_access_to_dropdown_queries(self.current_user, query_def)
+        require_access_to_dropdown_queries(self.current_user, query_def, Group.EDIT_QUERY_SCHEDULE_PERMISSION)
+        require_access(query, self.current_user, not_view_only, Group.EDIT_QUERY_SCHEDULE_PERMISSION)
 
-        if query.is_archived and not self.current_user.has_permission('admin') and "schedule" in query_def and query_def["schedule"] is not None:
+        if query.is_archived and not self.current_user.has_permission('admin') and "schedule" in query_def and \
+            query_def["schedule"] is not None:
             abort(
                 400,
                 message="The query {} is archived and the schedule cannot be activated.".format(query.id),
@@ -459,7 +463,7 @@ class QueryScheduleResource(BaseResource):
 
         query_schedule = {
             "schedule": query_def["schedule"],
-            "last_modified_by":  self.current_user,
+            "last_modified_by": self.current_user,
             "changed_by": self.current_user,
         }
 
@@ -471,7 +475,6 @@ class QueryScheduleResource(BaseResource):
             if query_def["version"] != query.version:
                 abort(409)
 
-
         try:
             self.update_model(query, query_schedule)
             models.db.session.commit()
@@ -480,13 +483,17 @@ class QueryScheduleResource(BaseResource):
 
         return QuerySerializer(query, with_visualizations=True).serialize()
 
+
 class QueryRegenerateApiKeyResource(BaseResource):
-    @require_permission("edit_query")
+
+    @require_permission(Group.REGENERATE_API_KEY_QUERY_PERMISSION)
     def post(self, query_id):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
         require_admin_or_owner(query.user_id)
+        require_access(query, self.current_user, not_view_only, Group.REGENERATE_API_KEY_QUERY_PERMISSION)
+
         query.regenerate_api_key()
         models.db.session.commit()
 
@@ -503,7 +510,8 @@ class QueryRegenerateApiKeyResource(BaseResource):
 
 
 class QueryForkResource(BaseResource):
-    @require_permission("edit_query")
+
+    @require_permission(Group.FORK_QUERY_PERMISSION)
     def post(self, query_id):
         """
         Creates a new query, copying the query text from an existing one.
@@ -515,7 +523,7 @@ class QueryForkResource(BaseResource):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
-        require_access(query.data_source, self.current_user, not_view_only)
+        require_access(query.data_source, self.current_user, not_view_only, Group.FORK_QUERY_PERMISSION)
         forked_query = query.fork(self.current_user)
         models.db.session.commit()
 
@@ -527,6 +535,8 @@ class QueryForkResource(BaseResource):
 
 
 class QueryRefreshResource(BaseResource):
+
+    @require_permission(Group.EXECUTE_QUERY_PERMISSION)
     def post(self, query_id):
         """
         Execute a query, updating the query object with the results.
@@ -549,7 +559,7 @@ class QueryRefreshResource(BaseResource):
                 400,
                 message="The query {} is archived and cannot be executed.".format(query.id),
             )
-        require_access(query, self.current_user, not_view_only)
+        require_access(query, self.current_user, not_view_only, Group.EXECUTE_QUERY_PERMISSION)
 
         parameter_values = collect_parameters_from_request(request.args)
         parameterized_query = ParameterizedQuery(query.query_text, org=self.current_org)
