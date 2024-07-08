@@ -66,6 +66,9 @@ class PermissionsCheckMixin(object):
     def has_permission(self, permission):
         return self.has_permissions((permission,))
 
+    def get_permissions(self):
+        return self.permissions
+
     def has_permissions(self, permissions):
         has_permissions = reduce(
             lambda a, b: a and b,
@@ -258,19 +261,40 @@ class User(
 @generic_repr("id", "name", "type", "org_id")
 class Group(db.Model, BelongsToOrgMixin):
     EDIT_QUERY_SCHEDULE_PERMISSION = "edit_query_schedule"
+    SAVE_QUERY_PERMISSION = "save_query"
+    REGENERATE_API_KEY_QUERY_PERMISSION = "regenerate_api_query"
+    FORK_QUERY_PERMISSION = "fork_query"
+    EXECUTE_QUERY_PERMISSION = "execute_query"
+    EDIT_VISUALIZATION_QUERY_PERMISSION = "edit_visualization_query"
+    LIST_ALERTS_PERMISSION = "list_alerts"
+    LIST_DASHBOARDS_PERMISSION = "list_dashboards"
+    VIEW_QUERY_PERMISSION = "view_query"
+    CREATE_DASHBOARD_PERMISSION = "create_dashboard"
+    CREATE_QUERY_PERMISSION = "create_query"
+    EDIT_DASHBOARD_PERMISSION = "edit_dashboard"
+    EDIT_QUERY_PERMISSION = "edit_query"
+    VIEW_SOURCE_PERMISSION = "view_source"
+    LIST_USERS_PERMISSION = "list_users"
+    SCHEDULE_QUERY_PERMISSION = "schedule_query"
+    LIST_DATA_SOURCES_PERMISSION = "list_data_sources"
+
     DEFAULT_PERMISSIONS = [
-        "create_dashboard",
-        "create_query",
-        "edit_dashboard",
-        "edit_query",
-        "view_query",
-        "view_source",
-        "execute_query",
-        "list_users",
-        "schedule_query",
-        "list_dashboards",
-        "list_alerts",
-        "list_data_sources",
+        CREATE_DASHBOARD_PERMISSION,
+        CREATE_QUERY_PERMISSION,
+        EDIT_DASHBOARD_PERMISSION,
+        EDIT_QUERY_PERMISSION,
+        VIEW_QUERY_PERMISSION,
+        VIEW_SOURCE_PERMISSION,
+        EXECUTE_QUERY_PERMISSION,
+        LIST_USERS_PERMISSION,
+        SCHEDULE_QUERY_PERMISSION,
+        LIST_DASHBOARDS_PERMISSION,
+        LIST_ALERTS_PERMISSION,
+        LIST_DATA_SOURCES_PERMISSION,
+        SAVE_QUERY_PERMISSION,
+        REGENERATE_API_KEY_QUERY_PERMISSION,
+        FORK_QUERY_PERMISSION,
+        EDIT_VISUALIZATION_QUERY_PERMISSION
     ]
 
     BUILTIN_GROUP = "builtin"
@@ -313,6 +337,18 @@ class Group(db.Model, BelongsToOrgMixin):
     def find_by_name(cls, org, group_names):
         result = cls.query.filter(cls.org == org, cls.name.in_(group_names))
         return list(result)
+
+    @classmethod
+    def find_by_data_source_and_permission(cls, org_id, data_source_id, permission):
+        query = """SELECT g.id, g.org_id, g.type, g.name, g.permissions
+                   FROM groups g
+                   JOIN data_source_groups dsg ON dsg.group_id = g.id
+                   WHERE dsg.data_source_id = :data_source_id
+                   AND g.org_id = :org_id
+                   AND :permission = any(permissions)"""
+
+        return (db.session.execute(query, {"data_source_id": data_source_id, "org_id": org_id, "permission": permission})
+                .fetchall())
 
 
 @generic_repr(
