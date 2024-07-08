@@ -277,6 +277,7 @@ class Group(db.Model, BelongsToOrgMixin):
     LIST_USERS_PERMISSION = "list_users"
     SCHEDULE_QUERY_PERMISSION = "schedule_query"
     LIST_DATA_SOURCES_PERMISSION = "list_data_sources"
+    LIST_GROUPS_PERMISSION = "list_groups"
 
     DEFAULT_PERMISSIONS = [
         CREATE_DASHBOARD_PERMISSION,
@@ -294,7 +295,8 @@ class Group(db.Model, BelongsToOrgMixin):
         SAVE_QUERY_PERMISSION,
         REGENERATE_API_KEY_QUERY_PERMISSION,
         FORK_QUERY_PERMISSION,
-        EDIT_VISUALIZATION_QUERY_PERMISSION
+        EDIT_VISUALIZATION_QUERY_PERMISSION,
+        LIST_GROUPS_PERMISSION
     ]
 
     BUILTIN_GROUP = "builtin"

@@ -31,7 +31,8 @@ class GroupsList extends React.Component {
     Columns.custom(
       (text, group) => (
         <div>
-          <Link href={"groups/" + group.id}>{group.name}</Link>
+          {currentUser.hasPermission("list_users") && <Link href={"groups/" + group.id}>{group.name}</Link>}
+          {!currentUser.hasPermission("list_users") && <label>{group.name}</label>}
           {group.type === "builtin" && <span className="label label-default m-l-10">built-in</span>}
         </div>
       ),
@@ -43,7 +44,7 @@ class GroupsList extends React.Component {
     Columns.custom(
       (text, group) => (
         <Button.Group>
-          <Link.Button href={`groups/${group.id}`}>Members</Link.Button>
+          {currentUser.hasPermission("list_users") && <Link.Button href={`groups/${group.id}`}>Members</Link.Button>}
           {currentUser.isAdmin && <Link.Button href={`groups/${group.id}/data_sources`}>Data Sources</Link.Button>}
         </Button.Group>
       ),
@@ -130,7 +131,7 @@ class GroupsList extends React.Component {
 const GroupsListPage = wrapSettingsTab(
   "Groups.List",
   {
-    permission: "list_users",
+    permission: "list_groups",
     title: "Groups",
     path: "groups",
     order: 3,

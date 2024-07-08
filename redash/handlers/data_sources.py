@@ -130,7 +130,7 @@ class DataSourceListResource(BaseResource):
             try:
                 d = ds.to_dict()
                 matching_groups = project(ds.groups, self.current_user.group_ids)
-                ds["view_only"] = all([g['view_only'] for g in matching_groups.values()])
+                d["view_only"] = all([g['view_only'] for g in matching_groups.values()])
                 response[ds.id] = d
             except AttributeError:
                 logging.exception(

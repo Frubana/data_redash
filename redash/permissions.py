@@ -57,13 +57,12 @@ def has_access_to_groups_with_permission(obj, user, need_view_only, permission):
         all_permissions.append(groups[group]['permissions'])
         all_view_only.append(groups[group]['view_only'])
 
-    all_permissions = all(flatten(all_permissions))
+    all_permissions = flatten(all_permissions)
     if not all_permissions:
         return False
 
-    all_view_only = all(flatten(all_view_only))
     required_level = 1 if need_view_only else 2
-    group_level = 1 if all_view_only else 2
+    group_level = 1 if all(flatten(all_view_only)) else 2
 
     return (required_level <= group_level) and permission in all_permissions
 

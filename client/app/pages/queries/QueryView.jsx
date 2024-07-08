@@ -106,7 +106,7 @@ function QueryView(props) {
           selectedVisualization={selectedVisualization}
           headerExtra={
             <DynamicComponent name="QueryView.HeaderExtra" query={query}>
-              {policy.canRun(query) && (
+              {policy.canExecuteQuery() && (
                 <QueryViewButton
                   className="m-r-5"
                   type="primary"
@@ -172,7 +172,7 @@ function QueryView(props) {
               onAddVisualization={addVisualization}
               onDeleteVisualization={deleteVisualization}
               refreshButton={
-                policy.canRun(query) && (
+                policy.canExecuteQuery() && (
                   <Button
                     type="primary"
                     disabled={!queryFlags.canExecute || areParametersDirty}
@@ -183,7 +183,7 @@ function QueryView(props) {
                   </Button>
                 )
               }
-              canRefresh={policy.canRun(query)}
+              canRefresh={policy.canExecuteQuery()}
             />
           )}
           <div className="query-results-footer">
@@ -195,6 +195,7 @@ function QueryView(props) {
                 isQueryExecuting={isExecuting}
                 showEditVisualizationButton={queryFlags.canEdit}
                 onEditVisualization={editVisualization}
+                queryFlags={queryFlags}
                 extraActions={
                   <QueryViewButton
                     className="icon-button m-r-5 hidden-xs"
