@@ -2,7 +2,7 @@ from funcy import pairwise
 from tests import BaseTestCase
 from mock import patch
 
-from redash.models import DataSource
+from redash.models import DataSource, Group
 from redash.query_runner.pg import PostgreSQL
 
 
@@ -66,7 +66,7 @@ class TestDataSourceResourceGet(BaseTestCase):
         self.assertIn("view_only", rv.json)
         self.assertIn("options", rv.json)
 
-    def test_returns_only_view_only_for_users_without_list_permissions(self):
+    def test_not_returns_for_users_without_list_permissions(self):
         group = self.factory.create_group(permissions=[])
         data_source = self.factory.create_data_source(group=group, view_only=True)
         user = self.factory.create_user(group_ids=[group.id])
@@ -74,8 +74,18 @@ class TestDataSourceResourceGet(BaseTestCase):
         rv = self.make_request(
             "get", "/api/data_sources/{}".format(data_source.id), user=user
         )
+        self.assertEqual(rv.status_code, 403)
+
+    def test_returns_only_view_only_for_users_with_list_permissions(self):
+        group = self.factory.create_group(permissions=[Group.LIST_DATA_SOURCES_PERMISSION])
+        data_source = self.factory.create_data_source(group=group, view_only=True)
+        user = self.factory.create_user(group_ids=[group.id])
+
+        rv = self.make_request(
+            "get", "/api/data_sources/{}".format(data_source.id), user=user
+        )
         self.assertEqual(rv.status_code, 200)
-        self.assertEqual(rv.json, {"view_only": True})
+        self.assertEqual(rv.json["view_only"], True)
 
     def test_returns_limited_data_for_non_admin_in_the_default_group(self):
         user = self.factory.create_user()

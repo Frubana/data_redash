@@ -110,8 +110,6 @@ class TestQueryResourcePost(BaseTestCase):
         self.assertEqual(rv.json["latest_query_data_id"], data["latest_query_data_id"])
         self.assertEqual(rv.json["schedule"]["interval"], query.schedule["interval"])
 
-
-
     def test_raises_error_in_case_of_conflict(self):
         q = self.factory.create_query()
         q.name = "Another Name"
@@ -549,9 +547,12 @@ WHERE x=1
 class TestQueryScheduleResourcePost(BaseTestCase):
 
     def test_update_query_with_permission(self):
-        group = self.factory.create_group(save_db=True, permissions=[Group.EDIT_QUERY_SCHEDULE_PERMISSION])
+        group = self.factory.create_group(save_db=True, permissions=[Group.EDIT_QUERY_SCHEDULE_PERMISSION
+            , Group.SCHEDULE_QUERY_PERMISSION])
         user = self.factory.create_user(group_ids=[group.id])
-        query = self.factory.create_query(user=user)
+
+        old_ds = self.factory.create_data_source(group=group)
+        query = self.factory.create_query(user=user, data_source=old_ds)
 
         new_ds = self.factory.create_data_source()
 
@@ -586,9 +587,11 @@ class TestQueryScheduleResourcePost(BaseTestCase):
         self.assertEqual(rv.status_code, 403)
 
     def test_update_schedule_archived_query(self):
-        group = self.factory.create_group(save_db=True, permissions=[Group.EDIT_QUERY_SCHEDULE_PERMISSION])
+        group = self.factory.create_group(save_db=True, permissions=[Group.EDIT_QUERY_SCHEDULE_PERMISSION,
+                                                                     Group.SCHEDULE_QUERY_PERMISSION])
         other_user = self.factory.create_user(group_ids=[group.id])
-        query = self.factory.create_query(is_archived=True, user=other_user)
+        old_ds = self.factory.create_data_source(group=group)
+        query = self.factory.create_query(is_archived=True, user=other_user, data_source=old_ds)
 
         new_ds = self.factory.create_data_source()
         new_qr = self.factory.create_query_result()
