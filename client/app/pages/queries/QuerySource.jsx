@@ -109,25 +109,27 @@ function QuerySource(props) {
 
   const handleDataSourceChange = useCallback(
     dataSourceId => {
-      if (dataSourceId) {
-        try {
-          localStorage.setItem("lastSelectedDataSourceId", dataSourceId);
-        } catch (e) {
-          // `localStorage.setItem` may throw exception if there are no enough space - in this case it could be ignored
+      if (queryFlags.canEdit) {//only edit the DS if the user have the permission, if not this user only can execute adhoc queries
+        if (dataSourceId) {
+          try {
+            localStorage.setItem("lastSelectedDataSourceId", dataSourceId);
+          } catch (e) {
+            // `localStorage.setItem` may throw exception if there are no enough space - in this case it could be ignored
+          }
+        }
+        if (query.data_source_id !== dataSourceId) {
+          recordEvent("update_data_source", "query", query.id, { dataSourceId });
+          const updates = {
+            data_source_id: dataSourceId,
+            latest_query_data_id: null,
+            latest_query_data: null,
+          };
+          setQuery(extend(query.clone(), updates));
+          updateQuery(updates, { successMessage: null }); // show message only on error
         }
       }
-      if (query.data_source_id !== dataSourceId) {
-        recordEvent("update_data_source", "query", query.id, { dataSourceId });
-        const updates = {
-          data_source_id: dataSourceId,
-          latest_query_data_id: null,
-          latest_query_data: null,
-        };
-        setQuery(extend(query.clone(), updates));
-        updateQuery(updates, { successMessage: null }); // show message only on error
-      }
     },
-    [query, setQuery, updateQuery]
+    [query, setQuery, updateQuery, queryFlags]
   );
 
   useEffect(() => {
@@ -214,7 +216,7 @@ function QuerySource(props) {
                   name={"QuerySourceDropdown"}
                   dataSources={dataSources}
                   value={dataSource ? dataSource.id : undefined}
-                  disabled={!queryFlags.canEdit || !dataSourcesLoaded || dataSources.length === 0}
+                  disabled={!queryFlags.canCreate || !dataSourcesLoaded || dataSources.length === 0}
                   loading={!dataSourcesLoaded}
                   onChange={handleDataSourceChange}
                 />
@@ -232,7 +234,7 @@ function QuerySource(props) {
               />
             </div>
 
-            {!query.isNew() && (
+            {!query.isNew() && queryFlags.canSave && (
               <div className="query-page-query-description">
                 <EditInPlace
                   isEditable={queryFlags.canEdit}
@@ -284,7 +286,7 @@ function QuerySource(props) {
                         onClick: formatQuery,
                       }}
                       saveButtonProps={
-                        queryFlags.canEdit && {
+                        queryFlags.canSave && {
                           text: (
                             <React.Fragment>
                               <span className="hidden-xs">Save</span>
@@ -317,7 +319,7 @@ function QuerySource(props) {
                       dataSourceSelectorProps={
                         dataSource
                           ? {
-                              disabled: !queryFlags.canEdit,
+                              disabled: !queryFlags.canCreate,
                               value: dataSource.id,
                               onChange: handleDataSourceChange,
                               options: map(dataSources, ds => ({ value: ds.id, label: ds.name })),
@@ -382,7 +384,8 @@ function QuerySource(props) {
                       queryResult={queryResult}
                       visualizations={query.visualizations}
                       showNewVisualizationButton={queryFlags.canEdit && queryResultData.status === ExecutionStatus.DONE}
-                      canDeleteVisualizations={queryFlags.canEdit}
+                      canDeleteVisualizations={queryFlags.canEditVisualization}
+                      canEditVisualization={queryFlags.canEditVisualization}
                       selectedTab={selectedVisualization}
                       onChangeTab={setSelectedVisualization}
                       onAddVisualization={addVisualization}
@@ -412,6 +415,7 @@ function QuerySource(props) {
                 isQueryExecuting={isQueryExecuting}
                 showEditVisualizationButton={!queryFlags.isNew && queryFlags.canEdit}
                 onEditVisualization={editVisualization}
+                queryFlags={queryFlags}
               />
             </div>
           )}

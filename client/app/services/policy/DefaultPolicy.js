@@ -65,4 +65,33 @@ export default class DefaultPolicy {
   canRun() {
     return true;
   }
+
+  canSaveQuery() {
+    return currentUser.hasPermission("save_query");
+  }
+
+  canRegenerateApiKey() {
+    return currentUser.hasPermission("regenerate_api_query");
+  }
+
+  canForkQuery() {
+    return currentUser.hasPermission("fork_query");
+  }
+
+  canExecuteQuery() {
+    return currentUser.hasPermission("execute_query");
+  }
+
+  canSchedule() {
+    return currentUser.hasPermission("edit_query_schedule") && currentUser.hasPermission("schedule_query");
+  }
+
+  canEditVisualization() {
+    return currentUser.hasPermission("edit_visualization_query");
+  }
+
+  canEditDashboard() {
+    return currentUser.hasPermission("edit_dashboard");
+  }
+
 }

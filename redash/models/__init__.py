@@ -158,13 +158,17 @@ class DataSource(BelongsToOrgMixin, db.Model):
         return data_source
 
     @classmethod
-    def all(cls, org, group_ids=None):
+    def all(cls, org, group_ids=None, permission=None):
         data_sources = cls.query.filter(cls.org == org).order_by(cls.id.asc())
 
         if group_ids:
             data_sources = data_sources.join(DataSourceGroup).filter(
                 DataSourceGroup.group_id.in_(group_ids)
             )
+            if permission:
+                data_sources = data_sources.join(Group).filter(
+                    Group.permissions.any(permission)
+                )
 
         return data_sources.distinct()
 
@@ -276,8 +280,8 @@ class DataSource(BelongsToOrgMixin, db.Model):
     # XXX examine call sites to see if a regular SQLA collection would work better
     @property
     def groups(self):
-        groups = DataSourceGroup.query.filter(DataSourceGroup.data_source == self)
-        return dict([(group.group_id, group.view_only) for group in groups])
+        ds_groups = DataSourceGroup.query.join(Group).filter(DataSourceGroup.data_source == self)
+        return dict([(dsg.group_id, {'permissions': dsg.group.permissions, 'view_only': dsg.view_only}) for dsg in ds_groups])
 
 
 @generic_repr("id", "data_source_id", "group_id", "view_only")
@@ -764,12 +768,14 @@ class Query(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model):
 
     @classmethod
     def all_groups_for_query_ids(cls, query_ids):
-        query = """SELECT group_id, view_only
+        query = """SELECT group_id, permissions, view_only
                    FROM queries
                    JOIN data_source_groups ON queries.data_source_id = data_source_groups.data_source_id
+                   JOIN groups g on g.id = data_source_groups.group_id
                    WHERE queries.id in :ids"""
 
-        return db.session.execute(query, {"ids": tuple(query_ids)}).fetchall()
+        return [(g["group_id"], {"view_only": g["view_only"], "permissions": g["permissions"]})
+                for g in db.session.execute(query, {"ids": tuple(query_ids)}).fetchall()]
 
     @classmethod
     def update_latest_result(cls, query_result):

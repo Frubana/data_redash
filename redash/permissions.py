@@ -14,14 +14,18 @@ ACCESS_TYPE_DELETE = "delete"
 ACCESS_TYPES = (ACCESS_TYPE_VIEW, ACCESS_TYPE_MODIFY, ACCESS_TYPE_DELETE)
 
 
-def has_access(obj, user, need_view_only):
+def has_access(obj, user, need_view_only, permission):
     if hasattr(obj, "api_key") and user.is_api_user():
         return has_access_to_object(obj, user.id, need_view_only)
     else:
-        return has_access_to_groups(obj, user, need_view_only)
+        return has_access_to_groups_with_permission(obj, user, need_view_only, permission)
 
 
 def has_access_to_object(obj, api_key, need_view_only):
+    """
+    Esta función verifica si la api key es de la misma query, en este caso si se puede ejecutar.
+    También si la key pertenece al menos a una query de las que tenga un dashboard.
+    """
     if obj.api_key == api_key:
         return need_view_only
     elif hasattr(obj, "dashboard_api_keys"):
@@ -31,7 +35,12 @@ def has_access_to_object(obj, api_key, need_view_only):
         return False
 
 
-def has_access_to_groups(obj, user, need_view_only):
+def has_access_to_groups_with_permission(obj, user, need_view_only, permission):
+    """
+    En caso de usar la api key de un usuario o si el request es generado por la app, se comporta de la misma forma para
+    los dos casos. Se verifica si existe algun grupo configurado con el permiso X y si al menos un grupo pertenece al
+    usuario y si posee el nivel de ejecucion adecuado sobre el objeto.
+    """
     groups = obj.groups if hasattr(obj, "groups") else obj
 
     if "admin" in user.permissions:
@@ -42,19 +51,28 @@ def has_access_to_groups(obj, user, need_view_only):
     if not matching_groups:
         return False
 
+    all_permissions = []
+    all_view_only = []
+    for group in matching_groups:
+        all_permissions.append(groups[group]['permissions'])
+        all_view_only.append(groups[group]['view_only'])
+
+    all_permissions = flatten(all_permissions)
+    if not all_permissions:
+        return False
+
     required_level = 1 if need_view_only else 2
+    group_level = 1 if all(flatten(all_view_only)) else 2
 
-    group_level = 1 if all(flatten([groups[group] for group in matching_groups])) else 2
-
-    return required_level <= group_level
+    return (required_level <= group_level) and permission in all_permissions
 
 
-def require_access(obj, user, need_view_only):
-    if not has_access(obj, user, need_view_only):
+def require_access(obj, user, need_view_only, permission):
+    if not has_access(obj, user, need_view_only, permission):
         abort(403)
 
 
-class require_permissions(object):
+class RequirePermissions(object):
     def __init__(self, permissions, allow_one=False):
         self.permissions = permissions
         self.allow_one = allow_one
@@ -62,11 +80,12 @@ class require_permissions(object):
     def __call__(self, fn):
         @functools.wraps(fn)
         def decorated(*args, **kwargs):
+            if current_user.has_permission("admin"):
+                return fn(*args, **kwargs)
             if self.allow_one:
                 has_permissions = any([current_user.has_permission(permission) for permission in self.permissions])
             else:
                 has_permissions = current_user.has_permissions(self.permissions)
-
             if has_permissions:
                 return fn(*args, **kwargs)
             else:
@@ -76,11 +95,11 @@ class require_permissions(object):
 
 
 def require_permission(permission):
-    return require_permissions((permission,))
+    return RequirePermissions((permission,))
 
 
 def require_any_of_permission(permissions):
-    return require_permissions(permissions, True)
+    return RequirePermissions(permissions, True)
 
 
 def require_admin(fn):
@@ -118,6 +137,7 @@ def can_modify(obj, user):
 def require_object_modify_permission(obj, user):
     if not can_modify(obj, user):
         abort(403)
+
 
 def has_permission(permission, user):
     return permission in user.permissions

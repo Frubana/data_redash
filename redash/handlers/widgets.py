@@ -2,6 +2,7 @@ from flask import request
 
 from redash import models
 from redash.handlers.base import BaseResource
+from redash.models import Group
 from redash.serializers import serialize_widget
 from redash.permissions import (
     require_access,
@@ -40,7 +41,7 @@ class WidgetListResource(BaseResource):
             visualization = models.Visualization.get_by_id_and_org(
                 visualization_id, self.current_org
             )
-            require_access(visualization.query_rel, self.current_user, view_only)
+            require_access(visualization.query_rel, self.current_user, view_only, Group.EDIT_DASHBOARD_PERMISSION)
         else:
             visualization = None
 

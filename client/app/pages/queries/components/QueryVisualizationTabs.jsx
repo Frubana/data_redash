@@ -88,6 +88,7 @@ export default function QueryVisualizationTabs({
   selectedTab,
   showNewVisualizationButton,
   canDeleteVisualizations,
+  canEditVisualization,
   onChangeTab,
   onAddVisualization,
   onDeleteVisualization,
@@ -105,7 +106,7 @@ export default function QueryVisualizationTabs({
     tabsProps.activeKey = `${selectedTab}`;
   }
 
-  if (showNewVisualizationButton) {
+  if (showNewVisualizationButton && canEditVisualization) {
     tabsProps.tabBarExtraContent = (
       <Button
         className="add-visualization-button"
@@ -176,6 +177,7 @@ QueryVisualizationTabs.propTypes = {
   selectedTab: PropTypes.number,
   showNewVisualizationButton: PropTypes.bool,
   canDeleteVisualizations: PropTypes.bool,
+  canEditVisualization: PropTypes.bool,
   onChangeTab: PropTypes.func,
   onAddVisualization: PropTypes.func,
   onDeleteVisualization: PropTypes.func,
@@ -189,6 +191,7 @@ QueryVisualizationTabs.defaultProps = {
   selectedTab: null,
   showNewVisualizationButton: false,
   canDeleteVisualizations: false,
+  canEditVisualization: false,
   onChangeTab: () => {},
   onAddVisualization: () => {},
   onDeleteVisualization: () => {},

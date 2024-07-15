@@ -1,8 +1,7 @@
 import pystache
 from functools import partial
 from numbers import Number
-from redash.utils import mustache_render, json_loads
-from redash.permissions import require_access, view_only
+from redash.utils import mustache_render
 from funcy import distinct
 from dateutil.parser import parse
 

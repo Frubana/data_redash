@@ -8,13 +8,13 @@ from flask_restful import abort
 from werkzeug.urls import url_quote
 from redash import models, settings
 from redash.handlers.base import BaseResource, get_object_or_404, record_event
+from redash.models import Group
 from redash.permissions import (
     has_access,
     not_view_only,
     require_access,
     require_permission,
-    require_any_of_permission,
-    view_only,
+    view_only, require_any_of_permission
 )
 from redash.tasks import Job
 from redash.tasks.queries import enqueue_query
@@ -158,7 +158,7 @@ def content_disposition_filenames(attachment_filename):
 
 
 class QueryResultListResource(BaseResource):
-    @require_permission("execute_query")
+    @require_permission(Group.EXECUTE_QUERY_PERMISSION)
     def post(self):
         """
         Execute a query (or retrieve recent results).
@@ -196,7 +196,7 @@ class QueryResultListResource(BaseResource):
         else:
             return error_messages["select_data_source"]
 
-        if not has_access(data_source, self.current_user, not_view_only):
+        if not has_access(data_source, self.current_user, not_view_only, Group.EXECUTE_QUERY_PERMISSION):
             return error_messages["no_permission"]
 
         return run_query(
@@ -217,7 +217,7 @@ class QueryResultDropdownResource(BaseResource):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
-        require_access(query.data_source, current_user, view_only)
+        require_access(query.data_source, current_user, view_only, Group.VIEW_QUERY_PERMISSION)
         try:
             return dropdown_values(query_id, self.current_org)
         except QueryDetachedFromDataSourceError as e:
@@ -229,7 +229,7 @@ class QueryDropdownsResource(BaseResource):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
-        require_access(query, current_user, view_only)
+        require_access(query, current_user, view_only, Group.VIEW_QUERY_PERMISSION)
 
         related_queries_ids = [
             p["queryId"] for p in query.parameters if p["type"] == "query"
@@ -238,7 +238,7 @@ class QueryDropdownsResource(BaseResource):
             dropdown_query = get_object_or_404(
                 models.Query.get_by_id_and_org, dropdown_query_id, self.current_org
             )
-            require_access(dropdown_query.data_source, current_user, view_only)
+            require_access(dropdown_query.data_source, current_user, view_only, Group.VIEW_QUERY_PERMISSION)
 
         return dropdown_values(dropdown_query_id, self.current_org)
 
@@ -255,7 +255,7 @@ class QueryResultResource(BaseResource):
                     settings.ACCESS_CONTROL_ALLOW_CREDENTIALS
                 ).lower()
 
-    @require_any_of_permission(("view_query", "execute_query"))
+    @require_any_of_permission((Group.VIEW_QUERY_PERMISSION, Group.EXECUTE_QUERY_PERMISSION))
     def options(self, query_id=None, query_result_id=None, filetype="json"):
         headers = {}
         self.add_cors_headers(headers)
@@ -272,7 +272,7 @@ class QueryResultResource(BaseResource):
 
         return make_response("", 200, headers)
 
-    @require_any_of_permission(("view_query", "execute_query"))
+    @require_any_of_permission((Group.VIEW_QUERY_PERMISSION, Group.EXECUTE_QUERY_PERMISSION))
     def post(self, query_id):
         """
         Execute a saved query.
@@ -313,7 +313,7 @@ class QueryResultResource(BaseResource):
             )
 
         if has_access(
-            query, self.current_user, allow_executing_with_view_only_permissions
+            query, self.current_user, allow_executing_with_view_only_permissions, Group.EXECUTE_QUERY_PERMISSION
         ):
             return run_query(
                 query.parameterized,
@@ -332,7 +332,7 @@ class QueryResultResource(BaseResource):
             else:
                 return error_messages["no_permission"]
 
-    @require_any_of_permission(("view_query", "execute_query"))
+    @require_any_of_permission((Group.VIEW_QUERY_PERMISSION, Group.EXECUTE_QUERY_PERMISSION))
     def get(self, query_id=None, query_result_id=None, filetype="json"):
         """
         Retrieve query results.
@@ -391,7 +391,8 @@ class QueryResultResource(BaseResource):
                     abort(404, message="No cached result found for this query.")
 
         if query_result:
-            require_access(query_result.data_source, self.current_user, view_only)
+            if not has_access(query_result.data_source, self.current_user, view_only, Group.EXECUTE_QUERY_PERMISSION):
+                abort(403)
 
             if isinstance(self.current_user, models.ApiUser):
                 event = {

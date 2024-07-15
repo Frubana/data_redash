@@ -2,6 +2,7 @@ from flask_restful import abort
 from flask import request
 from redash import models, redis_connection
 from redash.handlers.base import BaseResource, get_object_or_404
+from redash.models import Group
 from redash.permissions import (
     require_access,
     view_only,
@@ -20,7 +21,7 @@ def _get_databricks_data_source(data_source_id, user, org):
     data_source = get_object_or_404(
         models.DataSource.get_by_id_and_org, data_source_id, org
     )
-    require_access(data_source, user, view_only)
+    require_access(data_source, user, view_only, Group.LIST_DATA_SOURCES_PERMISSION)
 
     if not data_source.type == "databricks":
         abort(400, message="Resource only available for the Databricks query runner.")

@@ -4,6 +4,7 @@ import re
 import sqlite3
 
 from redash import models
+from redash.models import Group
 from redash.permissions import has_access, view_only, has_permission
 from redash.query_runner import (
     BaseQueryRunner,
@@ -46,7 +47,7 @@ def _load_query(user, query_id):
 
     # TODO: this duplicates some of the logic we already have in the redash.handlers.query_results.
     # We should merge it so it's consistent.
-    if not has_access(query.data_source, user, view_only):
+    if not has_access(query.data_source, user, view_only, Group.EXECUTE_QUERY_PERMISSION):
         raise PermissionError("You do not have access to query id {}.".format(query.id))
 
     return query

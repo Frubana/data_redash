@@ -17,7 +17,7 @@ import QueryResultsLink from "./QueryResultsLink";
 export default function QueryControlDropdown(props) {
   const menu = (
     <Menu>
-      {!props.query.isNew() && (!props.query.is_draft || !props.query.is_archived) && (
+      {props.queryFlags.canEditDashboard && !props.query.isNew() && (!props.query.is_draft || !props.query.is_archived) && (
         <Menu.Item>
           <PlainButton onClick={() => props.openAddToDashboardForm(props.selectedTab)}>
             <PlusCircleFilledIcon /> Add to Dashboard
@@ -87,6 +87,7 @@ QueryControlDropdown.propTypes = {
   apiKey: PropTypes.string,
   selectedTab: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   openAddToDashboardForm: PropTypes.func.isRequired,
+  queryFlags: PropTypes.object.isRequired, // eslint-disable-line react/forbid-prop-types
 };
 
 QueryControlDropdown.defaultProps = {

@@ -187,7 +187,7 @@ function DashboardControl({ dashboardConfiguration, headerExtra }) {
     <div className="dashboard-control">
       {!dashboard.is_archived && (
         <span className="hidden-print">
-          {showPublishButton && (
+          {showPublishButton && policy.canEditDashboard() && (
             <Button className="m-r-5 hidden-xs" onClick={togglePublished}>
               <span className="fa fa-paper-plane m-r-5" /> Publish
             </Button>
@@ -217,7 +217,7 @@ function DashboardControl({ dashboardConfiguration, headerExtra }) {
               </Button>
             </Tooltip>
           )}
-          {showMoreOptionsButton && <DashboardMoreOptionsButton dashboardConfiguration={dashboardConfiguration} />}
+          {showMoreOptionsButton && policy.canEditDashboard() && <DashboardMoreOptionsButton dashboardConfiguration={dashboardConfiguration} />}
         </span>
       )}
     </div>

@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 
 from redash import models
 from redash.handlers.base import BaseResource, get_object_or_404, paginate
+from redash.models import Group
 from redash.permissions import require_access, view_only
 
 
@@ -11,7 +12,7 @@ class QueryFavoriteResource(BaseResource):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
-        require_access(query, self.current_user, view_only)
+        require_access(query, self.current_user, view_only, Group.VIEW_QUERY_PERMISSION)
 
         fav = models.Favorite(
             org_id=self.current_org.id, object=query, user=self.current_user
@@ -34,7 +35,7 @@ class QueryFavoriteResource(BaseResource):
         query = get_object_or_404(
             models.Query.get_by_id_and_org, query_id, self.current_org
         )
-        require_access(query, self.current_user, view_only)
+        require_access(query, self.current_user, view_only, Group.VIEW_QUERY_PERMISSION)
 
         models.Favorite.query.filter(
             models.Favorite.object_id == query_id,
