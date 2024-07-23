@@ -3,6 +3,7 @@ This will eventually replace all the `to_dict` methods of the different model
 classes we have. This will ensure cleaner code and better
 separation of concerns.
 """
+import logging
 from funcy import project
 
 from flask_login import current_user
@@ -22,6 +23,8 @@ from .query_result import (
 )
 from ..models import Group
 
+
+logger = logging.getLogger(__name__)
 
 def public_widget(widget):
     res = {
@@ -339,8 +342,9 @@ def serialize_job(job):
         error = job.result["error"]
         status = 4
     else:
-        error = ""
+        error = "Unknown Error"
         result = query_result_id = job.result
+        logger.warning(f'The Job {job.id} failed unexpected.')
 
     return {
         "job": {
