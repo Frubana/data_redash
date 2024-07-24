@@ -33,7 +33,8 @@ sqlparse==0.3.0
 statsd==3.3.0
 greenlet==0.4.16
 gunicorn==20.0.4
-rq==1.16.2
+# desde la version 1.9.0 para arriba los workers que ejecutan mysql se mueren silenciosamente
+rq==1.8.0
 rq-scheduler==0.13.1
 jsonschema==3.1.1
 RestrictedPython==5.0
