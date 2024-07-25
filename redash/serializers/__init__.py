@@ -341,10 +341,10 @@ def serialize_job(job):
     elif isinstance(job.result, dict) and "error" in job.result:
         error = job.result["error"]
         status = 4
-    else:
-        error = "Unknown Error"
-        result = query_result_id = job.result
         logger.warning(f'The Job {job.id} failed unexpected.')
+    else:
+        error = ""
+        result = query_result_id = job.result
 
     return {
         "job": {
