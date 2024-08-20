@@ -14,7 +14,8 @@ export default function useQueryFlags(query, dataSource = null) {
       isArchived: query.is_archived,
 
       // permissions flags
-      canCreate: currentUser.hasPermission("create_query"),
+      // los policy.canEdit() son necesarios para manejar los permisos individuales de queries y dashboards a usuarios
+      canCreate: currentUser.hasPermission("create_query") && policy.canEdit(query),
       canView: currentUser.hasPermission("view_query"),
       canEdit: currentUser.hasPermission("edit_query") && policy.canEdit(query),
       canViewSource: currentUser.hasPermission("view_source"),
@@ -24,9 +25,9 @@ export default function useQueryFlags(query, dataSource = null) {
         (query.is_safe || !dataSource.view_only),
       canFork: policy.canForkQuery() && !dataSource.view_only,
       canSchedule: policy.canSchedule(),
-      canSave: policy.canSaveQuery(),
+      canSave: policy.canSaveQuery() && policy.canEdit(query),
       canRegenerateApiKey: policy.canRegenerateApiKey(),
-      canEditVisualization: policy.canEditVisualization(),
+      canEditVisualization: policy.canEditVisualization() && policy.canEdit(query),
       canEditDashboard: policy.canEditDashboard()
     }),
     [query, dataSource.view_only]

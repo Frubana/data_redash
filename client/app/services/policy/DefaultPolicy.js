@@ -58,6 +58,7 @@ export default class DefaultPolicy {
     return isArray(result) ? result : null;
   }
 
+  //esto maneja los permisos por query y dashboard para editor
   canEdit(object) {
     return get(object, "can_edit", false);
   }
