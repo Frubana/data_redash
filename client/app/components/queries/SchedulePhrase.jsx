@@ -51,12 +51,17 @@ export default class SchedulePhrase extends React.Component {
     const [short, full] = this.content;
     const content = full ? <Tooltip title={full}>{short}</Tooltip> : short;
 
-    return this.props.isLink ? (
-      <PlainButton type="link" className="schedule-phrase" onClick={this.props.onClick} data-test="EditSchedule">
-        {content}
-      </PlainButton>
-    ) : (
-      content
-    );
+    if (currentUser.hasPermission("edit_query_schedule")) {
+      return this.props.isLink ? (
+        <PlainButton type="link" className="schedule-phrase" onClick={this.props.onClick} data-test="EditSchedule">
+          {content}
+        </PlainButton>
+      ) : (
+        content
+      );
+    }
+
+    return content;
+
   }
 }

@@ -51,7 +51,6 @@ export default function QueryMetadata({ query, dataSource, layout, onEditSchedul
           </div>
         </div>
       )}
-      {currentUser.hasPermission("edit_query_schedule") && (
         <div className="query-metadata-item">
           <div className="query-metadata-property">
             <span className="query-metadata-label">
@@ -68,7 +67,6 @@ export default function QueryMetadata({ query, dataSource, layout, onEditSchedul
             </span>
           </div>
         </div>
-       )}
     </div>
   );
 }
