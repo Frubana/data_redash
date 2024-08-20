@@ -4,6 +4,7 @@ import Tooltip from "@/components/Tooltip";
 import PlainButton from "@/components/PlainButton";
 import { localizeTime, durationHumanize } from "@/lib/utils";
 import { RefreshScheduleType, RefreshScheduleDefault } from "../proptypes";
+import { currentUser } from "@/services/auth";
 
 import "./ScheduleDialog.css";
 
