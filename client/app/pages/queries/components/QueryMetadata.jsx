@@ -6,7 +6,6 @@ import { Moment } from "@/components/proptypes";
 import TimeAgo from "@/components/TimeAgo";
 import SchedulePhrase from "@/components/queries/SchedulePhrase";
 import { IMG_ROOT } from "@/services/data-source";
-import { currentUser } from "@/services/auth";
 
 import "./QueryMetadata.less";
 
