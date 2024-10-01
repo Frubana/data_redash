@@ -118,7 +118,7 @@ class SPARQLEndpointQueryRunner(BaseQueryRunner):
     def remove_comments(self, string):
         return string[string.index("*/") + 2 :].strip()
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         """send a query to a sparql endpoint"""
         logger.info("about to execute query (user='{}'): {}".format(user, query))
         query_text = self.remove_comments(query)

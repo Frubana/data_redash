@@ -86,7 +86,7 @@ class AzureKusto(BaseQueryRunner):
     def name(cls):
         return "Azure Data Explorer (Kusto)"
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
 
         kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication(
             connection_string=self.configuration["cluster"],
@@ -135,7 +135,7 @@ class AzureKusto(BaseQueryRunner):
     def get_schema(self, get_stats=False):
         query = ".show database schema as json"
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")

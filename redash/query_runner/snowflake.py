@@ -103,7 +103,7 @@ class Snowflake(BaseQueryRunner):
         data = {"columns": columns, "rows": rows}
         return data
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         connection = self._get_connection()
         cursor = connection.cursor()
 
@@ -137,8 +137,8 @@ class Snowflake(BaseQueryRunner):
             cursor.close()
             connection.close()
 
-        return data, error    
-    
+        return data, error
+
     def _database_name_includes_schema(self):
         return '.' in self.configuration.get('database')
 

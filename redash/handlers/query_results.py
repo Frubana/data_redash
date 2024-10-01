@@ -124,6 +124,7 @@ def run_query(
                 if current_user.is_api_user()
                 else current_user.email,
                 "query_id": query_id,
+                "parameters": parameters
             },
         )
         return serialize_job(job)

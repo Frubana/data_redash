@@ -75,7 +75,7 @@ class Presto(BaseQueryRunner):
         WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
         """
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")
@@ -92,7 +92,7 @@ class Presto(BaseQueryRunner):
 
         return list(schema.values())
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         connection = presto.connect(
             host=self.configuration.get("host", ""),
             port=self.configuration.get("port", 8080),

@@ -84,6 +84,10 @@ def enqueue_query(
                 )
                 metadata["Queue"] = queue_name
 
+                safe_params = None
+                if 'parameters' in metadata:
+                    safe_params = metadata.get("parameters")
+
                 queue = Queue(queue_name)
                 enqueue_kwargs = {
                     "user_id": user_id,
@@ -97,6 +101,7 @@ def enqueue_query(
                         "scheduled": scheduled_query_id is not None,
                         "query_id": metadata.get("query_id"),
                         "user_id": user_id,
+                        "parameters": safe_params,
                     },
                 }
 
@@ -185,7 +190,7 @@ class QueryExecutor(object):
         annotated_query = self._annotate_query(query_runner)
 
         try:
-            data, error = query_runner.run_query(annotated_query, self.user)
+            data, error = query_runner.run_query(annotated_query, self.user, self.metadata)
         except Exception as e:
             if isinstance(e, JobTimeoutException):
                 error = TIMEOUT_MESSAGE

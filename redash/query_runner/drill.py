@@ -91,7 +91,7 @@ class Drill(BaseHTTPQueryRunner):
         schema["order"] += ["allowed_schemas"]
         return schema
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         drill_url = os.path.join(self.configuration["url"], "query.json")
 
         payload = {"queryType": "SQL", "query": query}
@@ -132,7 +132,7 @@ class Drill(BaseHTTPQueryRunner):
                 )
             )
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")

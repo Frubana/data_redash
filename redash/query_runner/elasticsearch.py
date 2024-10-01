@@ -381,7 +381,7 @@ class Kibana(BaseElasticSearch):
 
         return raw_result["hits"]["total"]
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         try:
             error = None
 
@@ -460,7 +460,7 @@ class ElasticSearch(BaseElasticSearch):
     def name(cls):
         return "Elasticsearch"
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         try:
             error = None
 

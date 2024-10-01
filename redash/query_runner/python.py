@@ -195,7 +195,7 @@ class Python(BaseQueryRunner):
             raise Exception("Wrong data source name/id: %s." % data_source_name_or_id)
 
         # TODO: pass the user here...
-        data, error = data_source.query_runner.run_query(query, None)
+        data, error = data_source.query_runner.run_query(query, None, None)
         if error is not None:
             raise Exception(error)
 
@@ -245,7 +245,7 @@ class Python(BaseQueryRunner):
     def test_connection(self):
         pass
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         self._current_user = user
 
         try:

@@ -249,7 +249,7 @@ class MongoDB(BaseQueryRunner):
 
         return list(schema.values())
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         db = self._get_db()
 
         logger.debug(

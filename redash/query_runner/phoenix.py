@@ -69,7 +69,7 @@ class Phoenix(BaseQueryRunner):
         WHERE TABLE_SCHEM IS NULL OR TABLE_SCHEM != 'SYSTEM' AND COLUMN_NAME IS NOT NULL
         """
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")
@@ -86,7 +86,7 @@ class Phoenix(BaseQueryRunner):
 
         return list(schema.values())
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         connection = phoenixdb.connect(
             url=self.configuration.get("url", ""), autocommit=True
         )

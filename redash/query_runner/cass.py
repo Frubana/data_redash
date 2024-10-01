@@ -90,7 +90,7 @@ class Cassandra(BaseQueryRunner):
         query = """
         select release_version from system.local;
         """
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
         results = json_loads(results)
         release_version = results["rows"][0]["release_version"]
 
@@ -111,7 +111,7 @@ class Cassandra(BaseQueryRunner):
                 self.configuration["keyspace"]
             )
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
         results = json_loads(results)
 
         schema = {}
@@ -124,7 +124,7 @@ class Cassandra(BaseQueryRunner):
 
         return list(schema.values())
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         connection = None
         cert_path = self._generate_cert_file()
         if self.configuration.get("username", "") and self.configuration.get(

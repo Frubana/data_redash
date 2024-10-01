@@ -142,7 +142,7 @@ class CorporateMemoryQueryRunner(BaseQueryRunner):
     def type(cls):
         return "corporate_memory"
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         """send a sparql query to corporate memory"""
         query_text = query
         logger.info("about to execute query (user='{}'): {}".format(user, query_text))
