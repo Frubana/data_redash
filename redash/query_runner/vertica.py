@@ -72,7 +72,7 @@ class Vertica(BaseSQLQueryRunner):
         select table_schema, table_name, column_name from view_columns;
         """
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")
@@ -89,7 +89,7 @@ class Vertica(BaseSQLQueryRunner):
 
         return list(schema.values())
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         import vertica_python
 
         if query == "":

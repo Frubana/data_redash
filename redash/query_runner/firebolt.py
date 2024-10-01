@@ -34,7 +34,7 @@ class Firebolt(BaseQueryRunner):
     def enabled(cls):
         return enabled
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         connection = Connection(
             host=self.configuration["host"],
             port=self.configuration["port"],
@@ -72,7 +72,7 @@ class Firebolt(BaseQueryRunner):
         WHERE TABLE_SCHEMA <> 'INFORMATION_SCHEMA'
         """
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")

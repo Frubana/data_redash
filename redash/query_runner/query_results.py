@@ -4,7 +4,7 @@ import re
 import sqlite3
 
 from redash import models
-from redash.models import Group
+from redash.models import Group, ParameterizedQuery
 from redash.permissions import has_access, view_only, has_permission
 from redash.query_runner import (
     BaseQueryRunner,
@@ -64,7 +64,7 @@ def _annotate_query(query_runner, query, user):
     return query_runner.annotate_query(query.query_text, metadata)
 
 
-def get_query_results(user, query_id, bring_from_cache, parameters):
+def get_query_results(user, query_id, bring_from_cache, parameters={}):
     query = _load_query(user, query_id)
 
     if query.is_archived and not has_permission('admin', user):
@@ -93,9 +93,27 @@ def get_query_results(user, query_id, bring_from_cache, parameters):
 
             query_hash = gen_query_hash(query.query_text)
 
+            parameterized_query = ParameterizedQuery(query.query_text, org=query.org)
+
+            try:
+                parameterized_query.apply(parameters)
+            except Exception as e:
+                raise Exception(
+                    "Failed loading parameters for query query_hash={} id={}. Error: {}".format(query_hash, query.id,
+                                                                                             error))
+
+            query_text = query.data_source.query_runner.apply_auto_limit(
+                parameterized_query.text, False
+            )
+
+            if parameterized_query.missing_params:
+                raise Exception(
+                    "Missing parameter value for: {} for query query_hash={} id={}. Error: {}".format(", ".join(parameterized_query.missing_params),
+                                                                                                      query_hash, query.id, error))
+
             # only 1 concurrent execution of a query
             job = enqueue_query(
-                query.query_text,
+                query_text,
                 query.data_source,
                 user.id,
                 user.is_api_user(),
@@ -150,7 +168,7 @@ def get_query_results(user, query_id, bring_from_cache, parameters):
     return results
 
 
-def create_tables_from_query_ids(user, connection, query_ids, cached_query_ids=[], parameters=None):
+def create_tables_from_query_ids(user, connection, query_ids, cached_query_ids=[], parameters={}):
     for query_id in set(cached_query_ids):
         results = get_query_results(user, query_id, True, parameters)
         table_name = "cached_query_{query_id}".format(query_id=query_id)
@@ -212,12 +230,16 @@ class Results(BaseQueryRunner):
     def name(cls):
         return "Query Results"
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         connection = sqlite3.connect(":memory:")
+
+        safe_params = {}
+        if 'parameters' in metadata:
+            safe_params = metadata.get("parameters")
 
         query_ids = extract_query_ids(query)
         cached_query_ids = extract_cached_query_ids(query)
-        create_tables_from_query_ids(user, connection, query_ids, cached_query_ids, metadata.get("parameters"))
+        create_tables_from_query_ids(user, connection, query_ids, cached_query_ids, safe_params)
 
         cursor = connection.cursor()
 

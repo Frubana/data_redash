@@ -146,12 +146,12 @@ class BaseQueryRunner(object):
     def test_connection(self):
         if self.noop_query is None:
             raise NotImplementedError()
-        data, error = self.run_query(self.noop_query, None)
+        data, error = self.run_query(self.noop_query, None, None)
 
         if error is not None:
             raise Exception(error)
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         raise NotImplementedError()
 
     def fetch_columns(self, columns):
@@ -176,7 +176,7 @@ class BaseQueryRunner(object):
         raise NotSupported()
 
     def _run_query_internal(self, query):
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed running query [%s]." % query)

@@ -42,7 +42,7 @@ class CSV(BaseQueryRunner):
     def test_connection(self):
         pass
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         path = ""
         ua = ""
         args = {}

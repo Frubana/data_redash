@@ -67,7 +67,7 @@ class Kylin(BaseQueryRunner):
             "secret": ["password"],
         }
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         url = self.configuration["url"]
         kylinuser = self.configuration["user"]
         kylinpass = self.configuration["password"]

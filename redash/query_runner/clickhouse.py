@@ -70,7 +70,7 @@ class ClickHouse(BaseSQLQueryRunner):
     def _get_tables(self, schema):
         query = "SELECT database, table, name FROM system.columns WHERE database NOT IN ('system')"
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")
@@ -171,7 +171,7 @@ class ClickHouse(BaseSQLQueryRunner):
 
         return {"columns": columns, "rows": rows}
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         logger.debug("Clickhouse is about to execute query: %s", query)
         if query == "":
             json_data = None

@@ -80,7 +80,7 @@ class Oracle(BaseSQLQueryRunner):
         WHERE all_tab_cols.OWNER NOT IN('SYS','SYSTEM','ORDSYS','CTXSYS','WMSYS','MDSYS','ORDDATA','XDB','OUTLN','DMSYS','DSSYS','EXFSYS','LBACSYS','TSMSYS')
         """
 
-        results, error = self.run_query(query, None)
+        results, error = self.run_query(query, None, None)
 
         if error is not None:
             raise Exception("Failed getting schema.")
@@ -124,7 +124,7 @@ class Oracle(BaseSQLQueryRunner):
                     arraysize=cursor.arraysize,
                 )
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         if self.configuration.get("encoding"):
             os.environ["NLS_LANG"] = self.configuration["encoding"]
 

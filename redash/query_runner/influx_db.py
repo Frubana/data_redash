@@ -67,7 +67,7 @@ class InfluxDB(BaseQueryRunner):
     def type(cls):
         return "influxdb"
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         client = InfluxDBClient.from_dsn(self.configuration["url"])
 
         logger.debug("influxdb url: %s", self.configuration["url"])

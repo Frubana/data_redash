@@ -158,12 +158,12 @@ class GoogleAnalytics(BaseSQLQueryRunner):
             # Make sure we return a more readable error to the end user
             raise Exception(e._get_reason())
 
-    def run_query(self, query, user):
+    def run_query(self, query, user, metadata):
         logger.debug("Analytics is about to execute query: %s", query)
         try:
             params = json_loads(query)
         except:
-            query_string = parse_qs(urlparse(query).query, keep_blank_values=True) 
+            query_string = parse_qs(urlparse(query).query, keep_blank_values=True)
             params = {k.replace('-', '_'): ",".join(v) for k,v in query_string.items()}
 
         if "mcf:" in params["metrics"] and "ga:" in params["metrics"]:
