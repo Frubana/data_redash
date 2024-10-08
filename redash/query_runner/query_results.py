@@ -98,9 +98,13 @@ def get_query_results(user, query_id, bring_from_cache, parameters={}):
             try:
                 parameterized_query.apply(parameters)
             except Exception as e:
-                raise Exception(
-                    "Failed loading parameters for query query_hash={} id={}. Error: {}".format(query_hash, query.id,
-                                                                                             error))
+                try:
+                    logger.error("Failed loading dynamics parameters for query query_hash={} id={}.".format(query_hash, query.id))
+                    parameterized_query.apply(query.parameters())
+                except Exception as ex:
+                    logger.error("Failed loading default parameters for query query_hash={} id={}.".format(query_hash, query.id))
+                    raise Exception(
+                        "Failed loading default parameters for query query_hash={} id={}.".format(query_hash, query.id))
 
             query_text = query.data_source.query_runner.apply_auto_limit(
                 parameterized_query.text, False
