@@ -5,6 +5,7 @@ import sqlite3
 
 from redash import models
 from redash.models import Group, ParameterizedQuery
+from redash.models.parameterized_query import InvalidParameterError, QueryDetachedFromDataSourceError
 from redash.permissions import has_access, view_only, has_permission
 from redash.query_runner import (
     BaseQueryRunner,
@@ -97,23 +98,29 @@ def get_query_results(user, query_id, bring_from_cache, parameters={}):
 
             try:
                 parameterized_query.apply(parameters)
-            except Exception as e:
-                try:
-                    logger.error("Failed loading dynamics parameters for query query_hash={} id={}.".format(query_hash, query.id))
-                    parameterized_query.apply(query.parameters())
-                except Exception as ex:
-                    logger.error("Failed loading default parameters for query query_hash={} id={}.".format(query_hash, query.id))
-                    raise Exception(
-                        "Failed loading default parameters for query query_hash={} id={}.".format(query_hash, query.id))
+                if parameterized_query.missing_params:
+                    _parameters = {p["name"]: p.get("value") for p in query.parameters}
+                    if any(_parameters):
+                        parameterized_query.apply(_parameters)
+            except InvalidParameterError as e:
+                msg = "Failed loading parameters for query query_hash={} id={} because of invalid parameters.".format(query_hash, query.id)
+                logger.error(msg, e)
+                raise Exception(msg)
+            except QueryDetachedFromDataSourceError as e:
+                msg = ("Failed loading parameters for query query_hash={} id={} because a related dropdown query ({}) "
+                       "is unattached to any datasource.").format(query_hash, query.id, e.query_id)
+                logger.error(msg, e)
+                raise Exception(msg)
 
             query_text = query.data_source.query_runner.apply_auto_limit(
                 parameterized_query.text, False
             )
 
             if parameterized_query.missing_params:
-                raise Exception(
-                    "Missing parameter value for: {} for query query_hash={} id={}. Error: {}".format(", ".join(parameterized_query.missing_params),
-                                                                                                      query_hash, query.id, error))
+                msg = "Missing parameter value for: {} for query query_hash={} id={}.".format(", ".join(parameterized_query.missing_params),
+                                                                                                      query_hash, query.id)
+                logger.error(msg)
+                raise Exception(msg)
 
             # only 1 concurrent execution of a query
             job = enqueue_query(
