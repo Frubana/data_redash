@@ -65,7 +65,7 @@ def _annotate_query(query_runner, query, user):
     return query_runner.annotate_query(query.query_text, metadata)
 
 
-def get_query_results(user, query_id, bring_from_cache, parameters={}):
+def get_query_results(user, query_id, bring_from_cache, parameters={}, is_scheduled=False):
     query = _load_query(user, query_id)
 
     if query.is_archived and not has_permission('admin', user):
@@ -128,6 +128,7 @@ def get_query_results(user, query_id, bring_from_cache, parameters={}):
                 query.data_source,
                 user.id,
                 user.is_api_user(),
+                query if is_scheduled else None,
                 metadata={
                     "Username": repr(user) if user.is_api_user() else user.email,
                     "query_id": query_id,
@@ -179,14 +180,14 @@ def get_query_results(user, query_id, bring_from_cache, parameters={}):
     return results
 
 
-def create_tables_from_query_ids(user, connection, query_ids, cached_query_ids=[], parameters={}):
+def create_tables_from_query_ids(user, connection, query_ids, cached_query_ids=[], parameters={}, is_scheduled=False):
     for query_id in set(cached_query_ids):
-        results = get_query_results(user, query_id, True, parameters)
+        results = get_query_results(user, query_id, True, parameters, is_scheduled)
         table_name = "cached_query_{query_id}".format(query_id=query_id)
         create_table(connection, table_name, results)
 
     for query_id in set(query_ids):
-        results = get_query_results(user, query_id, False, parameters)
+        results = get_query_results(user, query_id, False, parameters, is_scheduled)
         table_name = "query_{query_id}".format(query_id=query_id)
         create_table(connection, table_name, results)
 
@@ -250,7 +251,11 @@ class Results(BaseQueryRunner):
 
         query_ids = extract_query_ids(query)
         cached_query_ids = extract_cached_query_ids(query)
-        create_tables_from_query_ids(user, connection, query_ids, cached_query_ids, safe_params)
+        create_tables_from_query_ids(user
+                                     ,connection, query_ids
+                                     , cached_query_ids
+                                     , safe_params
+                                     , metadata['Scheduled'] if 'Scheduled' in metadata else False)
 
         cursor = connection.cursor()
 

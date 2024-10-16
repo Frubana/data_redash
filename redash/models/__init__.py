@@ -1564,3 +1564,66 @@ class DashboardExecutions(db.Model):
             "execution_date": self.execution_date,
             "dashboard_id": int(self.dashboard_id)
         }
+
+
+class QueryExecutions(db.Model):
+    __tablename__ = "query_executions"
+
+    id = primary_key("QueryExecutions")
+    creation_date = Column(db.DateTime(True), default=db.func.now(), nullable=False)
+    user_id = Column(key_type("User"), db.ForeignKey("users.id"), nullable=True, index=True)
+    data_source_id = Column(key_type("DataSource"), db.ForeignKey("data_sources.id"), nullable=False, index=True)
+    query_id = Column(key_type("Query"), db.ForeignKey("queries.id"), nullable=True, index=True)
+    query_hash = Column(db.String(32), nullable=False)
+    is_scheduled_query = Column(db.Boolean, nullable=False, default=False)
+    is_api_user = Column(db.Boolean, nullable=False, default=False)
+    size = Column(postgresql.DOUBLE_PRECISION, nullable=True)
+    runtime = Column(postgresql.DOUBLE_PRECISION)
+    execution_successful = Column(db.Boolean, nullable=False)
+
+    @classmethod
+    def all(cls, query_id):
+        query = (
+            QueryExecutions.query.filter(cls.query_id == query_id)
+        )
+
+        return query
+
+    @classmethod
+    def insert(
+        cls, user_id, data_source_id, query_id, query_hash, is_scheduled_query, is_api_user, size, runtime
+        , execution_successful
+    ):
+        query_result = cls(
+            user_id=user_id,
+            data_source_id=data_source_id,
+            query_id=query_id,
+            query_hash=query_hash,
+            is_scheduled_query=is_scheduled_query,
+            is_api_user=is_api_user,
+            size=size,
+            runtime=runtime,
+            execution_successful=execution_successful
+        )
+
+        db.session.add(query_result)
+        logging.info("Inserted query result (%s) data; id=%s", query_hash, query_result.id)
+
+        return query_result
+
+    def __str__(self):
+        return str(self.id)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "creation_date": self.creation_date,
+            "user_id": int(self.user_id),
+            "data_source_id": int(self.data_source_id),
+            "query_id": int(self.query_id),
+            "query_hash": int(self.query_hash),
+            "is_scheduled_query": int(self.is_scheduled_query),
+            "is_api_user": int(self.is_api_user),
+            "size": int(self.size),
+            "runtime": int(self.runtime),
+        }
