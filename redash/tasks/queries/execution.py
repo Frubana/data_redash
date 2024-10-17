@@ -1,4 +1,5 @@
 import signal
+import sys
 import time
 import redis
 
@@ -141,17 +142,40 @@ class QueryExecutionError(Exception):
 def _resolve_user(user_id, is_api_key, query_id):
     if user_id is not None:
         if is_api_key:
-            api_key = user_id
-            if query_id is not None:
-                q = models.Query.get_by_id(query_id)
+            if isinstance(user_id, int):
+                user = models.User.get_by_id(user_id)
+                return models.ApiUser(user.id, user.org, user.group_ids, user.name, user.permissions)
             else:
-                q = models.Query.by_api_key(api_key)
+                api_key = user_id
+                if query_id is not None:
+                    q = models.Query.get_by_id(query_id)
+                else:
+                    q = models.Query.by_api_key(api_key)
 
-            return models.ApiUser(api_key, q.org, q.groups)
+                return models.ApiUser(api_key, q.org, q.groups)
         else:
             return models.User.get_by_id(user_id)
     else:
         return None
+
+
+def _get_size(obj, seen=None):
+    """Recursively finds size of objects"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    seen.add(obj_id)
+    if isinstance(obj, dict):
+        size += sum([_get_size(v, seen) for v in obj.values()])
+        size += sum([_get_size(k, seen) for k in obj.keys()])
+    elif hasattr(obj, '__dict__'):
+        size += _get_size(obj.__dict__, seen)
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum([_get_size(i, seen) for i in obj])
+    return size
 
 
 class QueryExecutor(object):
@@ -214,6 +238,18 @@ class QueryExecutor(object):
 
         if error is not None and data is None:
             result = QueryExecutionError(error)
+            models.QueryExecutions.insert(
+                self.user.id if isinstance(self.user.id, int) else None,
+                self.data_source_id,
+                None if self.query_id == 'adhoc' else self.query_id,
+                self.query_hash,
+                self.is_scheduled_query,
+                self.user.is_api_user(),
+                None,
+                run_time,
+                False
+            )
+            models.db.session.commit()
             if self.is_scheduled_query:
                 self.query_model = models.db.session.merge(self.query_model, load=False)
                 track_failure(self.query_model, error)
@@ -233,6 +269,18 @@ class QueryExecutor(object):
                 data,
                 run_time,
                 utcnow(),
+            )
+
+            models.QueryExecutions.insert(
+                self.user.id if isinstance(self.user.id, int) else None,
+                self.data_source_id,
+                None if self.query_id == 'adhoc' else self.query_id,
+                self.query_hash,
+                self.is_scheduled_query,
+                self.user.is_api_user(),
+                _get_size(data),
+                run_time,
+                True
             )
 
             updated_query_ids = models.Query.update_latest_result(query_result)

@@ -122,10 +122,12 @@ def get_user_from_api_key(api_key, query_id):
         user = models.User.get_by_api_key_and_org(api_key, org)
         if user.is_disabled:
             user = None
+        else:
+            user = models.ApiUser(user.id, org, user.group_ids, user.name, user.permissions)
     except models.NoResultFound:
         try:
             api_key = models.ApiKey.get_by_api_key(api_key)
-            user = models.ApiUser(api_key, api_key.org, [])
+            user = models.ApiUser(api_key, api_key.org, [], permissions=["view_query"])
         except models.NoResultFound:
             if query_id:
                 query = models.Query.get_by_id_and_org(query_id, org)
@@ -135,6 +137,7 @@ def get_user_from_api_key(api_key, query_id):
                         query.org,
                         list(query.groups.keys()),
                         name="ApiKey: Query {}".format(query.id),
+                        permissions=["view_query"]
                     )
 
     return user
