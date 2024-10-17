@@ -1570,7 +1570,7 @@ class QueryExecutions(db.Model):
     __tablename__ = "query_executions"
 
     id = primary_key("QueryExecutions")
-    creation_date = Column(db.DateTime(True), default=db.func.now(), nullable=False)
+    creation_date = Column(db.DateTime(True), default=db.func.now(), nullable=False, index=True)
     user_id = Column(key_type("User"), db.ForeignKey("users.id"), nullable=True, index=True)
     data_source_id = Column(key_type("DataSource"), db.ForeignKey("data_sources.id"), nullable=False, index=True)
     query_id = Column(key_type("Query"), db.ForeignKey("queries.id"), nullable=True, index=True)
