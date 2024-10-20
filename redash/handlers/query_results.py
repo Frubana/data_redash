@@ -383,13 +383,13 @@ class QueryResultResource(BaseResource):
                     self.current_org,
                 )
 
-            if (
-                query is not None
-                and query_result is not None
-                and self.current_user.is_api_user()
-            ):
-                if query.query_hash != query_result.query_hash:
-                    abort(404, message="No cached result found for this query.")
+            #if (
+            #    query is not None
+            #    and query_result is not None
+            #    and self.current_user.is_api_user()
+            #):
+            #    if query.query_hash != query_result.query_hash:
+            #        abort(404, message="No cached result found for this query.")
 
         if query_result:
             if not has_access(query_result.data_source, self.current_user, view_only, Group.EXECUTE_QUERY_PERMISSION):
