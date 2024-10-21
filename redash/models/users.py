@@ -470,3 +470,7 @@ class ApiUser(UserMixin, PermissionsCheckMixin):
             return None
         return self.org.id
 
+    def has_access(self, obj, access_type):
+        if isinstance(self.id, int):
+            return AccessPermission.exists(obj, access_type, grantee=User(id=self.id))
+        return False

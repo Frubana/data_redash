@@ -262,6 +262,12 @@ class DashboardResource(BaseResource):
 
         updates["changed_by"] = self.current_user
 
+        if self.current_user.is_api_user():
+            user = models.User.get_by_id(self.current_user.id)
+            updates["changed_by"] = user
+        else:
+            updates["changed_by"] = self.current_user
+
         self.update_model(dashboard, updates)
         models.db.session.add(dashboard)
         try:
