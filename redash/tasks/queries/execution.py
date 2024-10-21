@@ -239,12 +239,12 @@ class QueryExecutor(object):
         if error is not None and data is None:
             result = QueryExecutionError(error)
             models.QueryExecutions.insert(
-                self.user.id if isinstance(self.user.id, int) else None,
+                self.user.id if self.user is not None and isinstance(self.user.id, int) else None,
                 self.data_source_id,
                 None if self.query_id == 'adhoc' else self.query_id,
                 self.query_hash,
                 self.is_scheduled_query,
-                self.user.is_api_user(),
+                self.user.is_api_user() if self.user is not None else True,
                 None,
                 run_time,
                 False
@@ -272,12 +272,12 @@ class QueryExecutor(object):
             )
 
             models.QueryExecutions.insert(
-                self.user.id if isinstance(self.user.id, int) else None,
+                self.user.id if self.user is not None and isinstance(self.user.id, int) else None,
                 self.data_source_id,
                 None if self.query_id == 'adhoc' else self.query_id,
                 self.query_hash,
                 self.is_scheduled_query,
-                self.user.is_api_user(),
+                self.user.is_api_user() if self.user is not None else True,
                 _get_size(data),
                 run_time,
                 True

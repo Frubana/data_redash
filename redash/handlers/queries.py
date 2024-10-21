@@ -1,3 +1,5 @@
+import logging
+
 import sqlparse
 from flask import jsonify, request, url_for
 from flask_login import login_required
@@ -324,6 +326,8 @@ class MyQueriesResource(BaseResource):
         )
 
 
+logger = logging.getLogger(__name__)
+
 class QueryResource(BaseResource):
 
     @require_permission(Group.SAVE_QUERY_PERMISSION)
@@ -375,8 +379,14 @@ class QueryResource(BaseResource):
             )
             require_access(data_source, self.current_user, not_view_only, Group.SAVE_QUERY_PERMISSION)
 
-        query_def["last_modified_by"] = self.current_user
-        query_def["changed_by"] = self.current_user
+        if self.current_user.is_api_user():
+            user = models.User.get_by_id(self.current_user.id)
+            query_def["last_modified_by"] = user
+            query_def["changed_by"] = user
+        else:
+            query_def["last_modified_by"] = self.current_user
+            query_def["changed_by"] = self.current_user
+
         # SQLAlchemy handles the case where a concurrent transaction beats us
         # to the update. But we still have to make sure that we're not starting
         # out behind.
@@ -463,10 +473,16 @@ class QueryScheduleResource(BaseResource):
             )
 
         query_schedule = {
-            "schedule": query_def["schedule"],
-            "last_modified_by": self.current_user,
-            "changed_by": self.current_user,
+            "schedule": query_def["schedule"]
         }
+
+        if self.current_user.is_api_user():
+            user = models.User.get_by_id(self.current_user.id)
+            query_schedule["last_modified_by"] = user
+            query_schedule["changed_by"] = user
+        else:
+            query_schedule["last_modified_by"] = self.current_user
+            query_schedule["changed_by"] = self.current_user
 
         # SQLAlchemy handles the case where a concurrent transaction beats us
         # to the update. But we still have to make sure that we're not starting
